@@ -1,4 +1,5 @@
-import Interpolation from 'http://localhost:8000/Interpolation.js';
+import Interpolation from 'http://localhost:8000/scripts/Interpolation.js';
+import StepInterpolation from 'http://localhost:8000/scripts/StepInterpolation.js';
 
 const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, PubSub, THREE, getMenuController, utils } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
@@ -20,7 +21,10 @@ export default class Keyframe extends CustomAssetEntity {
         this._time = numberOr(params['time'], 1);
         this.parameters = {};
         this._interpolations = new Set();
+        this._parameterInterpolations = {};
         if(params['parameters']) this.setParameters(params['parameters']);
+        if(params['interpolations'])
+            this.interpolations = params['interpolations'];
     }
 
     _createMesh() {
@@ -49,7 +53,7 @@ export default class Keyframe extends CustomAssetEntity {
         let params = super.exportParams();
         params['time'] = this._time;
         params['parameters'] = this.parameters;
-        params['interpolations'] = this.intepolations;
+        params['interpolations'] = this.interpolations;
         return params;
     }
 
@@ -78,6 +82,7 @@ export default class Keyframe extends CustomAssetEntity {
         if(!interpolation) return;
         this._interpolations.add(interpolation);
         interpolation.registerKeyframe(this);
+        this._parameterInterpolations[interpolation.parameter] = interpolation;
     }
 
     addParameter(field, id) {
@@ -120,6 +125,11 @@ export default class Keyframe extends CustomAssetEntity {
         this._object.visible = false;
         this._animationPath = null;
         this.visualEdit = false;
+    }
+
+    interpolate(parameter, time, nextKeyframe) {
+        let interpolation = this._parameterInterpolations[parameter];
+        return interpolation.getValue(time, nextKeyframe);
     }
 
     static assetId = '401fcf91-49ef-480b-992d-e55ac0c65d4e';
@@ -193,12 +203,22 @@ if(EditorHelpers) {
         }
 
         _createInterpolation(field) {
-            let interpolation = ProjectHandler.addNewAsset(
-                Interpolation.assetId, {
-                    parameter: field.parameter,
-                    type: field.type,
-                });
-            this._asset.addInterpolation(interpolation);
+            let assetId;
+            let params = {
+                parameter: field.parameter,
+                name: field.name,
+            };
+            if(field.parameter == 'position') {
+                assetId = StepInterpolation.assetId;
+            } else if(field.parameter == 'rotation') {
+                assetId = StepInterpolation.assetId;
+            } else if(field.type == 'ColorField') {
+                assetId = StepInterpolation.assetId;
+            } else {
+                assetId = StepInterpolation.assetId;
+            }
+            let interpolation = ProjectHandler.addNewAsset(assetId, params);
+            this._asset.addInterpolation(interpolation.id);
         }
 
         _loadAssetParams(params, helperClass) {

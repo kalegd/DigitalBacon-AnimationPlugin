@@ -1,0 +1,29 @@
+body {
+    background-color: #FFFFFF;
+    margin: 0px;
+    text-align:center;
+}
+
+#container-parent, #container {
+    height: 100lvh;
+    width: 100%;
+    position: fixed;
+}
+
+.overlay {
+    position: relative;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.overlay * {
+    pointer-events: auto;
+}
+
+.height-editor {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+}

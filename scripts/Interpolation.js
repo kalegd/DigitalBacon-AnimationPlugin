@@ -31,8 +31,10 @@ export default class Interpolation extends CustomAssetEntity {
         return params;
     }
 
+    get parameter() { return this._parameter; }
     get type() { return this._type; }
 
+    set parameter(parameter) { this._parameter = parameter; }
     set type(type) {
         this._type = type;
     }
@@ -57,7 +59,7 @@ if(EditorHelpers) {
 
         static fields = [
             { "parameter": "type", "name": "Interpolation Type",
-                "options": INTERPOLATION_TYPES, "type": EnumField },
+                "map": INTERPOLATION_TYPES, "type": EnumField },
         ];
     }
 

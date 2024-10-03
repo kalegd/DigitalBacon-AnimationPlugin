@@ -1,9 +1,11 @@
-import Keyframe from 'http://localhost:8000/Keyframe.js';
+import Keyframe from 'http://localhost:8000/scripts/Keyframe.js';
 
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler } = window.DigitalBacon;
+const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, isEditor, isImmersionDisabled } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
-const { AssetSetField } = CustomAssetEntityHelper.FieldTypes;
+const { AssetSetField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
+
+var maxScrollTime = 0;
 
 export default class AnimationPath extends CustomAssetEntity {
     constructor(params = {}) {
@@ -11,9 +13,18 @@ export default class AnimationPath extends CustomAssetEntity {
         super(params);
         this._animatedAssets = new Set();
         this._keyframes = new Set();
+        this._orderedKeyframes = [];
+        this._orderedParameters = {};
+        this._maxTime = 0;
+        this._scrollBased = params['scrollBased'] || false;
         if(params['animatedAssets']) this.animatedAssets
             = params['animatedAssets'];
         if(params['keyframes']) this.keyframes = params['keyframes'];
+        if(isEditor()) return;
+        if(this._scrollBased && isImmersionDisabled()
+                && this._orderedKeyframes?.length) {
+            this.update = this._updateScrollBased;
+        }
     }
 
     _getDefaultName() {
@@ -24,6 +35,7 @@ export default class AnimationPath extends CustomAssetEntity {
         let params = super.exportParams();
         params['animatedAssets'] = this.animatedAssets;
         params['keyframes'] = this.keyframes;
+        params['scrollBased'] = this.scrollBased;
         return params;
     }
 
@@ -43,6 +55,8 @@ export default class AnimationPath extends CustomAssetEntity {
         return keyframeIds;
     }
 
+    get scrollBased() { return this._scrollBased; }
+
     set animatedAssets(animatedAssets) {
         for(let animatedAssetId of animatedAssets) {
             this.addAnimatedAsset(animatedAssetId);
@@ -53,7 +67,26 @@ export default class AnimationPath extends CustomAssetEntity {
         for(let keyframeId of keyframes) {
             this.addKeyframe(keyframeId);
         }
+        this._orderedKeyframes = Array.from(this._keyframes);
+        this._orderedKeyframes = this._orderedKeyframes.sort(
+            (a, b) => a.time - b.time);
+        if(!this._orderedKeyframes.length) return;
+        for(let keyframe of this._orderedKeyframes) {
+            for(let id in keyframe.parameters) {
+                let parameter = keyframe.parameters[id].parameter;
+                if(!this._orderedParameters[parameter])
+                    this._orderedParameters[parameter] = [];
+                this._orderedParameters[parameter].push(keyframe);
+            }
+        }
+        this._maxTime = Math.max(this._maxTime,
+            this._orderedKeyframes[this._orderedKeyframes.length - 1].time);
+        if(this._scrollBased) {
+            maxScrollTime = Math.max(maxScrollTime, this._maxTime);
+        }
     }
+
+    set scrollBased(scrollBased) { this._scrollBased = scrollBased; }
 
     addAnimatedAsset(animatedAssetId) {
         let animatedAsset = ProjectHandler.getAsset(animatedAssetId);
@@ -79,6 +112,38 @@ export default class AnimationPath extends CustomAssetEntity {
         if(!keyframe) return;
         this._keyframes.delete(keyframe);
         keyframe.unregisterAnimationPath(this);
+    }
+
+    _setTime(time) {
+        for(let parameter in this._orderedParameters) {
+            let keyframes = this._orderedParameters[parameter];
+            let keyframe = keyframes[0];
+            let nextKeyframe;
+            for(let i = 1; i < keyframes.length; i++) {
+                nextKeyframe = keyframes[i];
+                if(keyframe.time <= time && time <= nextKeyframe.time) break;
+                keyframe = nextKeyframe;
+                nextKeyframe = null;
+            }
+            let value = keyframe.interpolate(parameter, time, nextKeyframe);
+            this._updateAssets(parameter, value);
+        }
+    }
+
+    _updateAssets(parameter, value) {
+        for(let asset of this._animatedAssets) {
+            asset[parameter] = value;
+        }
+    }
+
+    _updateScrollBased() {
+        let maxHeight = document.body.scrollHeight - window.innerHeight;
+        let scrollPosition = window.scrollY;
+        let scrollPercent = Math.min(Math.max(scrollPosition / maxHeight, 0),1);
+        if(scrollPercent == this._lastScrollPercent) return;
+        this._lastScrollPercent = scrollPercent;
+        let time = scrollPercent * maxScrollTime;
+        this._setTime(time);
     }
 
     static assetId = '2d227485-0b34-40a4-873d-2a0782d034c6';
@@ -107,6 +172,8 @@ if(EditorHelpers) {
 
         static fields = [
             "visualEdit",
+            { "parameter": "scrollBased", "name": "Scroll Based",
+                "type": CheckboxField },
             { "parameter": "animatedAssets", "name": "Assets",
                 "addFunction": "addAnimatedAsset",
                 "removeFunction": "removeAnimatedAsset",
