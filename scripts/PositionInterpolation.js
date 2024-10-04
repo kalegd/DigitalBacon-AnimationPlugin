@@ -20,6 +20,14 @@ export default class PositionInterpolation extends Interpolation {
         return params;
     }
 
+    getValue(time, nextKeyframe) {
+        let value = super.getValue(time, nextKeyframe);
+        if(!value) return value;
+        workingVector3.fromArray(value);
+        this._keyframe._animationPath.object.localToWorld(workingVector3);
+        return workingVector3.toArray();
+    }
+
     _getLinearValue(time, nextKeyframe) {
         if (time <= this._keyframe.time) return this._keyframe['position'];
         if (time >= nextKeyframe.time) return nextKeyframe['position'];

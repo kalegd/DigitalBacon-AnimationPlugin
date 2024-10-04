@@ -1,9 +1,12 @@
 import Keyframe from 'http://localhost:8000/scripts/Keyframe.js';
 
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, isEditor, isImmersionDisabled } = window.DigitalBacon;
+const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, THREE, isEditor, isImmersionDisabled } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
 const { AssetSetField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
+
+const workingEuler = new THREE.Euler();
+const workingQuaternion = new THREE.Quaternion();
 
 var maxScrollTime = 0;
 
@@ -133,6 +136,16 @@ export default class AnimationPath extends CustomAssetEntity {
     _updateAssets(parameter, value) {
         for(let asset of this._animatedAssets) {
             asset[parameter] = value;
+            if(parameter == 'position') {
+                asset._object.parent.worldToLocal(asset._object.position);
+            } else if(parameter == 'rotation') {
+                let quaternion = asset._object.quaternion;
+                quaternion.setFromEuler(asset._object.rotation);
+                asset._object.parent.getWorldQuaternion(workingQuaternion);
+                quaternion.premultiply(workingQuaternion.invert());
+            } else if(parameter == 'scale') {
+
+            }
         }
     }
 
