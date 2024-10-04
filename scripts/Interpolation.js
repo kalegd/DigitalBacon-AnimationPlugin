@@ -1,20 +1,19 @@
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler } = window.DigitalBacon;
-const { CustomAssetEntity } = Assets;
-const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
-const { EnumField } = CustomAssetEntityHelper.FieldTypes;
+const { Assets, EditorHelpers } = window.DigitalBacon;
+const { CustomAsset } = Assets;
+const { CustomAssetHelper, EditorHelperFactory } = EditorHelpers;
+const { EnumField } = CustomAssetHelper.FieldTypes;
 
 const INTERPOLATION_TYPES = {
     Linear: 'linear',
-    Bezier: 'cubic-bezier',
-    'Ease-in': 'ease-in',
-    'Ease-out': 'ease-out',
-    'Ease-in-out': 'ease-in-out',
+    //Bezier: 'cubic-bezier',
+    //'Ease-in': 'ease-in',
+    //'Ease-out': 'ease-out',
+    //'Ease-in-out': 'ease-in-out',
     Step: 'step',
 };
 
-export default class Interpolation extends CustomAssetEntity {
+class Interpolation extends CustomAsset {
     constructor(params = {}) {
-        params['assetId'] = Interpolation.assetId;
         super(params);
         this._parameter = params['parameter'];
         this._type = params['type'] || 'linear';
@@ -35,33 +34,48 @@ export default class Interpolation extends CustomAssetEntity {
     get type() { return this._type; }
 
     set parameter(parameter) { this._parameter = parameter; }
-    set type(type) {
-        this._type = type;
-    }
+    set type(type) { this._type = type; }
 
     registerKeyframe(keyframe) {
         this._keyframe = keyframe;
     }
 
-    static assetId = '57a0b700-8fc1-455a-a6cf-fdba6967b1f1';
+    getValue(time, nextKeyframe) {
+        if(!this._keyframe) {
+            return;
+        } else if(!nextKeyframe) {
+            return this._keyframe[this._parameter];
+        } else if(this._type == 'linear') {
+            return this._getLinearValue(time, nextKeyframe);
+        } else {
+            return this._getStepValue(time, nextKeyframe);
+        }
+    }
+
+    _getLinearValue(time, nextKeyframe) {
+        console.error('_getLinearValue(...) should be overwritten');
+    }
+
+    _getStepValue(time, nextKeyframe) {
+        console.error('_getStepValue(...) should be overwritten');
+    }
+
     static assetName = 'Interpolation';
     static isPrivate = true;
 }
 
-ProjectHandler.registerAsset(Interpolation);
-LibraryHandler.loadPrivate(Interpolation);
-
-if(EditorHelpers) {
-    class InterpolationHelper extends CustomAssetEntityHelper {
-        constructor(asset) {
-            super(asset);
-        }
-
-        static fields = [
-            { "parameter": "type", "name": "Interpolation Type",
-                "map": INTERPOLATION_TYPES, "type": EnumField },
-        ];
+class InterpolationHelper extends CustomAssetHelper {
+    constructor(asset) {
+        super(asset);
     }
 
-    EditorHelperFactory.registerEditorHelper(InterpolationHelper,Interpolation);
+    static fields = [
+        { "parameter": "type", "name": "Interpolation Type",
+            "map": INTERPOLATION_TYPES, "type": EnumField },
+    ];
 }
+
+EditorHelperFactory.registerEditorHelper(InterpolationHelper,Interpolation);
+
+export { Interpolation };
+export { InterpolationHelper };

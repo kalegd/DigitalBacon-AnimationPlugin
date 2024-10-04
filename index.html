@@ -33,10 +33,7 @@
 
       setupEditor("container", params).then(() => {
         LibraryHandler.loadAsset('/scripts/AnimationPath.js', (assetId) => {
-            ProjectHandler.addNewAsset(assetId, {
-                position: [0, 1.97, 1.05],
-                visualEdit: true,
-            });
+            ProjectHandler.addNewAsset(assetId, { visualEdit: true });
         });
       });
     </script>

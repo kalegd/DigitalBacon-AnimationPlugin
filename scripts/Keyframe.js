@@ -1,7 +1,8 @@
-import Interpolation from 'http://localhost:8000/scripts/Interpolation.js';
+import NumberInterpolation from 'http://localhost:8000/scripts/NumberInterpolation.js';
+import PositionInterpolation from 'http://localhost:8000/scripts/PositionInterpolation.js';
 import StepInterpolation from 'http://localhost:8000/scripts/StepInterpolation.js';
 
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, PubSub, THREE, getMenuController, utils } = window.DigitalBacon;
+const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, PubSub, THREE, getMenuController, isEditor, utils } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
 const { AssetSetField, ButtonField, CheckboxField, ColorField, EulerField, NumberField, Vector2Field, Vector3Field } = CustomAssetEntityHelper.FieldTypes;
@@ -28,6 +29,7 @@ export default class Keyframe extends CustomAssetEntity {
     }
 
     _createMesh() {
+        if(!isEditor()) return;
         if(!piggyTexture) {
             piggyTexture = new THREE.TextureLoader().load(PiggyImageUrl);
             piggyTexture.repeat.x = 5;
@@ -209,9 +211,11 @@ if(EditorHelpers) {
                 name: field.name,
             };
             if(field.parameter == 'position') {
-                assetId = StepInterpolation.assetId;
+                assetId = PositionInterpolation.assetId;
             } else if(field.parameter == 'rotation') {
                 assetId = StepInterpolation.assetId;
+            } else if(field.type == 'NumberField') {
+                assetId = NumberInterpolation.assetId;
             } else if(field.type == 'ColorField') {
                 assetId = StepInterpolation.assetId;
             } else {

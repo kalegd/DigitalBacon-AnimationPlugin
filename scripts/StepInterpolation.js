@@ -1,37 +1,21 @@
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler } = window.DigitalBacon;
-const { CustomAssetEntity } = Assets;
-const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
-const { EnumField } = CustomAssetEntityHelper.FieldTypes;
+import { Interpolation, InterpolationHelper } from 'http://localhost:8000/scripts/Interpolation.js';
 
-export default class StepInterpolation extends CustomAssetEntity {
+const { EditorHelpers, LibraryHandler, ProjectHandler } = window.DigitalBacon;
+const { EditorHelperFactory } = EditorHelpers;
+
+export default class StepInterpolation extends Interpolation {
     constructor(params = {}) {
         params['assetId'] = StepInterpolation.assetId;
         super(params);
-        this._parameter = params['parameter'];
+        this._type = 'step';
     }
 
     _getDefaultName() {
         return StepInterpolation.assetName;
     }
 
-    exportParams() {
-        let params = super.exportParams();
-        params['parameter'] = this._parameter;
-        params['type'] = this._type;
-        return params;
-    }
-
-    get parameter() { return this._parameter; }
-
-    set parameter(parameter) { this._parameter = parameter; }
-
-    registerKeyframe(keyframe) {
-        this._keyframe = keyframe;
-    }
-
-    getValue(time, nextKeyframe) {
-        if(!this._keyframe) return;
-        if(!nextKeyframe || time < nextKeyframe.time)
+    _getStepValue(time, nextKeyframe) {
+        if(time < nextKeyframe.time)
             return this._keyframe[this._parameter];
         return nextKeyframe[this._parameter];
     }
@@ -44,15 +28,13 @@ export default class StepInterpolation extends CustomAssetEntity {
 ProjectHandler.registerAsset(StepInterpolation);
 LibraryHandler.loadPrivate(StepInterpolation);
 
-if(EditorHelpers) {
-    class StepInterpolationHelper extends CustomAssetEntityHelper {
-        constructor(asset) {
-            super(asset);
-        }
-
-        static fields = [];
+class StepInterpolationHelper extends InterpolationHelper {
+    constructor(asset) {
+        super(asset);
     }
 
-    EditorHelperFactory.registerEditorHelper(StepInterpolationHelper,
-        StepInterpolation);
+    static fields = [];
 }
+
+EditorHelperFactory.registerEditorHelper(StepInterpolationHelper,
+    StepInterpolation);
