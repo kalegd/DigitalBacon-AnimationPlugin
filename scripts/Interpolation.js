@@ -43,8 +43,10 @@ class Interpolation extends CustomAsset {
     getValue(time, nextKeyframe) {
         if(!this._keyframe) {
             return;
-        } else if(!nextKeyframe) {
+        } else if(!nextKeyframe || time <= this._keyframe.time) {
             return this._keyframe[this._parameter];
+        } else if(time >= nextKeyframe.time) {
+            return nextKeyframe[this._parameter];
         } else if(this._type == 'linear') {
             return this._getLinearValue(time, nextKeyframe);
         } else {

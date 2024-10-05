@@ -13,9 +13,6 @@ export default class NumberInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        if (time <= this._keyframe.time) return this._keyframe[this._parameter];
-        if (time >= nextKeyframe.time) return nextKeyframe[this._parameter];
-
         let interpolationFactor = (time - this._keyframe.time)
             / (nextKeyframe.time - this._keyframe.time);
         return (nextKeyframe[this._parameter] - this._keyframe[this._parameter])

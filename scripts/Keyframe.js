@@ -4,18 +4,19 @@ import PositionInterpolation from 'http://localhost:8000/scripts/PositionInterpo
 import RotationInterpolation from 'http://localhost:8000/scripts/RotationInterpolation.js';
 import ScaleInterpolation from 'http://localhost:8000/scripts/ScaleInterpolation.js';
 import StepInterpolation from 'http://localhost:8000/scripts/StepInterpolation.js';
+import TextInterpolation from 'http://localhost:8000/scripts/TextInterpolation.js';
 
 const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, PubSub, THREE, getMenuController, isEditor, utils } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
-const { AssetSetField, ButtonField, CheckboxField, ColorField, EulerField, NumberField, Vector2Field, Vector3Field } = CustomAssetEntityHelper.FieldTypes;
+const { AssetSetField, ButtonField, CheckboxField, ColorField, EulerField, NumberField, TextField, Vector2Field, Vector3Field } = CustomAssetEntityHelper.FieldTypes;
 const { numberOr } = utils;
 
 const PiggyImageUrl = 'https://cdn.jsdelivr.net/gh/kalegd/digitalbacon-plugins@latest/textures/Digital_Bacon_Piggy.jpg';
 var piggyTexture;
 
 const vector3s = [new THREE.Vector3(), new THREE.Vector3()];
-const supportedFields = new Set([CheckboxField, ColorField, EulerField, NumberField, Vector2Field, Vector3Field]);
+const supportedFields = new Set([CheckboxField, ColorField, EulerField, NumberField, TextField, Vector2Field, Vector3Field]);
 const assetEntityParameters = ['position', 'rotation', 'scale', 'renderOrder'];
 
 export default class Keyframe extends CustomAssetEntity {
@@ -223,6 +224,8 @@ if(EditorHelpers) {
                 assetId = NumberInterpolation.assetId;
             } else if(field.type == 'ColorField') {
                 assetId = ColorInterpolation.assetId;
+            } else if(field.type == 'TextField') {
+                assetId = TextInterpolation.assetId;
             } else {
                 assetId = StepInterpolation.assetId;
             }

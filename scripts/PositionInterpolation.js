@@ -29,9 +29,6 @@ export default class PositionInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        if (time <= this._keyframe.time) return this._keyframe['position'];
-        if (time >= nextKeyframe.time) return nextKeyframe['position'];
-
         let interpolationFactor = (time - this._keyframe.time)
             / (nextKeyframe.time - this._keyframe.time);
 

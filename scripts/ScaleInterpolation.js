@@ -30,9 +30,6 @@ export default class ScaleInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        if (time <= this._keyframe.time) return this._keyframe['scale'];
-        if (time >= nextKeyframe.time) return nextKeyframe['scale'];
-
         let interpolationFactor = (time - this._keyframe.time)
             / (nextKeyframe.time - this._keyframe.time);
 

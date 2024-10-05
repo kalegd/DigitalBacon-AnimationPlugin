@@ -36,9 +36,6 @@ export default class RotationInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        if (time <= this._keyframe.time) return this._keyframe['rotation'];
-        if (time >= nextKeyframe.time) return nextKeyframe['rotation'];
-
         let interpolationFactor = (time - this._keyframe.time)
             / (nextKeyframe.time - this._keyframe.time);
 
