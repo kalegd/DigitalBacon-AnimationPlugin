@@ -25,8 +25,7 @@ export default class AnimationPath extends CustomAssetEntity {
             = params['animatedAssets'];
         if(params['keyframes']) this.keyframes = params['keyframes'];
         if(isEditor()) return;
-        if(this._scrollBased && isImmersionDisabled()
-                && this._orderedKeyframes?.length) {
+        if(this._scrollBased && isImmersionDisabled()) {
             this.update = this._updateScrollBased;
         }
     }
@@ -71,6 +70,7 @@ export default class AnimationPath extends CustomAssetEntity {
         for(let keyframeId of keyframes) {
             this.addKeyframe(keyframeId);
         }
+        this._orderedParameters = {};
         this._orderedKeyframes = Array.from(this._keyframes);
         this._orderedKeyframes = this._orderedKeyframes.sort(
             (a, b) => a.time - b.time);
