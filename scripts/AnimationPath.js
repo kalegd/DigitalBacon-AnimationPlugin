@@ -1,7 +1,7 @@
 import Keyframe from 'http://localhost:8000/scripts/Keyframe.js';
 
 const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, THREE, isEditor, isImmersionDisabled } = window.DigitalBacon;
-const { CustomAssetEntity } = Assets;
+const { AssetEntity, CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
 const { AssetSetField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
 
@@ -137,7 +137,9 @@ export default class AnimationPath extends CustomAssetEntity {
     _updateAssets(parameter, value) {
         for(let asset of this._animatedAssets) {
             asset[parameter] = value;
-            if(parameter == 'position') {
+            if(asset instanceof AssetEntity == false) {
+                continue;
+            } else if(parameter == 'position') {
                 asset._object.parent.worldToLocal(asset._object.position);
             } else if(parameter == 'rotation') {
                 let quaternion = asset._object.quaternion;

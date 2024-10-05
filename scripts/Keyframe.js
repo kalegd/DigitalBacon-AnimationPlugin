@@ -1,3 +1,4 @@
+import ColorInterpolation from 'http://localhost:8000/scripts/ColorInterpolation.js';
 import NumberInterpolation from 'http://localhost:8000/scripts/NumberInterpolation.js';
 import PositionInterpolation from 'http://localhost:8000/scripts/PositionInterpolation.js';
 import RotationInterpolation from 'http://localhost:8000/scripts/RotationInterpolation.js';
@@ -221,7 +222,7 @@ if(EditorHelpers) {
             } else if(field.type == 'NumberField') {
                 assetId = NumberInterpolation.assetId;
             } else if(field.type == 'ColorField') {
-                assetId = StepInterpolation.assetId;
+                assetId = ColorInterpolation.assetId;
             } else {
                 assetId = StepInterpolation.assetId;
             }

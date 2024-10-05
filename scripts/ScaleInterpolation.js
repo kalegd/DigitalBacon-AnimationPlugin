@@ -49,7 +49,7 @@ export default class ScaleInterpolation extends Interpolation {
         return nextKeyframe['scale'];
     }
 
-    static assetId = '3dcb0b91-80fc-4aaf-aac4-a991521c906c';
+    static assetId = 'ede2dc59-168a-4753-be2d-62530fcf7d67';
     static assetName = 'Scale Interpolation';
     static isPrivate = true;
 }
