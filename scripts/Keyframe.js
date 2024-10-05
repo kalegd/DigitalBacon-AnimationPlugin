@@ -1,6 +1,7 @@
 import NumberInterpolation from 'http://localhost:8000/scripts/NumberInterpolation.js';
 import PositionInterpolation from 'http://localhost:8000/scripts/PositionInterpolation.js';
 import RotationInterpolation from 'http://localhost:8000/scripts/RotationInterpolation.js';
+import ScaleInterpolation from 'http://localhost:8000/scripts/ScaleInterpolation.js';
 import StepInterpolation from 'http://localhost:8000/scripts/StepInterpolation.js';
 
 const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, PubSub, THREE, getMenuController, isEditor, utils } = window.DigitalBacon;
@@ -215,6 +216,8 @@ if(EditorHelpers) {
                 assetId = PositionInterpolation.assetId;
             } else if(field.parameter == 'rotation') {
                 assetId = RotationInterpolation.assetId;
+            } else if(field.parameter == 'scale') {
+                assetId = ScaleInterpolation.assetId;
             } else if(field.type == 'NumberField') {
                 assetId = NumberInterpolation.assetId;
             } else if(field.type == 'ColorField') {

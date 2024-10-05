@@ -7,6 +7,7 @@ const { AssetSetField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
 
 const workingEuler = new THREE.Euler();
 const workingQuaternion = new THREE.Quaternion();
+const workingVector3 = new THREE.Vector3();
 
 var maxScrollTime = 0;
 
@@ -144,7 +145,8 @@ export default class AnimationPath extends CustomAssetEntity {
                 asset._object.parent.getWorldQuaternion(workingQuaternion);
                 quaternion.premultiply(workingQuaternion.invert());
             } else if(parameter == 'scale') {
-
+                asset._object.parent.getWorldScale(workingVector3);
+                asset._object.scale.divide(workingVector3);
             }
         }
     }
