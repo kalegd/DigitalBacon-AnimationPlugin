@@ -59,7 +59,9 @@ class Interpolation extends CustomAsset {
     }
 
     _getStepValue(time, nextKeyframe) {
-        console.error('_getStepValue(...) should be overwritten');
+        if(time < nextKeyframe.time)
+            return this._keyframe[this._parameter];
+        return nextKeyframe[this._parameter];
     }
 
     static assetName = 'Interpolation';

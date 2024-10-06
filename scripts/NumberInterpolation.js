@@ -19,12 +19,6 @@ export default class NumberInterpolation extends Interpolation {
             * interpolationFactor + this._keyframe[this._parameter];
     }
 
-    _getStepValue(time, nextKeyframe) {
-        if(time < nextKeyframe.time)
-            return this._keyframe[this._parameter];
-        return nextKeyframe[this._parameter];
-    }
-
     static assetId = 'e89be085-ee97-4702-bf2c-01ec0505a694';
     static assetName = 'Number Interpolation';
     static isPrivate = true;

@@ -14,12 +14,6 @@ export default class StepInterpolation extends Interpolation {
         return StepInterpolation.assetName;
     }
 
-    _getStepValue(time, nextKeyframe) {
-        if(time < nextKeyframe.time)
-            return this._keyframe[this._parameter];
-        return nextKeyframe[this._parameter];
-    }
-
     static assetId = '6599906d-6fdc-4a51-9468-7e5eb3401b97';
     static assetName = 'Step Interpolation';
     static isPrivate = true;

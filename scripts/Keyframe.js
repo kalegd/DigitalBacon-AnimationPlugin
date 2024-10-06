@@ -1,10 +1,12 @@
 import ColorInterpolation from 'http://localhost:8000/scripts/ColorInterpolation.js';
+import EulerInterpolation from 'http://localhost:8000/scripts/EulerInterpolation.js';
 import NumberInterpolation from 'http://localhost:8000/scripts/NumberInterpolation.js';
 import PositionInterpolation from 'http://localhost:8000/scripts/PositionInterpolation.js';
 import RotationInterpolation from 'http://localhost:8000/scripts/RotationInterpolation.js';
 import ScaleInterpolation from 'http://localhost:8000/scripts/ScaleInterpolation.js';
 import StepInterpolation from 'http://localhost:8000/scripts/StepInterpolation.js';
 import TextInterpolation from 'http://localhost:8000/scripts/TextInterpolation.js';
+import VectorInterpolation from 'http://localhost:8000/scripts/VectorInterpolation.js';
 
 const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, PubSub, THREE, getMenuController, isEditor, utils } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
@@ -18,12 +20,25 @@ var piggyTexture;
 const vector3s = [new THREE.Vector3(), new THREE.Vector3()];
 const supportedFields = new Set([CheckboxField, ColorField, EulerField, NumberField, TextField, Vector2Field, Vector3Field]);
 const assetEntityParameters = ['position', 'rotation', 'scale', 'renderOrder'];
+const parameterToAssetId = {
+    position: PositionInterpolation.assetId,
+    rotation: RotationInterpolation.assetId,
+    scale: ScaleInterpolation.assetId,
+};
+const fieldToAssetId = {
+    ColorField: ColorInterpolation.assetId,
+    EulerField: EulerInterpolation.assetId,
+    NumberField: NumberInterpolation.assetId,
+    TextField: TextInterpolation.assetId,
+    Vector2Field: VectorInterpolation.assetId,
+    Vector3Field: VectorInterpolation.assetId,
+};
 
 export default class Keyframe extends CustomAssetEntity {
     constructor(params = {}) {
         params['assetId'] = Keyframe.assetId;
         super(params);
-        this._time = numberOr(params['time'], 1);
+        this._time = numberOr(params['time'], 0);
         this.parameters = {};
         this._interpolations = new Set();
         this._parameterInterpolations = {};
@@ -214,18 +229,10 @@ if(EditorHelpers) {
                 parameter: field.parameter,
                 name: field.name,
             };
-            if(field.parameter == 'position') {
-                assetId = PositionInterpolation.assetId;
-            } else if(field.parameter == 'rotation') {
-                assetId = RotationInterpolation.assetId;
-            } else if(field.parameter == 'scale') {
-                assetId = ScaleInterpolation.assetId;
-            } else if(field.type == 'NumberField') {
-                assetId = NumberInterpolation.assetId;
-            } else if(field.type == 'ColorField') {
-                assetId = ColorInterpolation.assetId;
-            } else if(field.type == 'TextField') {
-                assetId = TextInterpolation.assetId;
+            if(field.type in parameterToAssetId) {
+                assetId = parameterToAssetId[field.type];
+            } else if(field.type in fieldToAssetId) {
+                assetId = fieldToAssetId[field.type];
             } else {
                 assetId = StepInterpolation.assetId;
             }

@@ -26,12 +26,6 @@ export default class ColorInterpolation extends Interpolation {
         return this._rgbToHex(r, g, b);
     }
 
-    _getStepValue(time, nextKeyframe) {
-        if(time < nextKeyframe.time)
-            return this._keyframe[this._parameter];
-        return nextKeyframe[this._parameter];
-    }
-
     _hexToRGB(hex) {
         let r = (hex >> 16) & 0xFF;
         let g = (hex >> 8) & 0xFF;
