@@ -13,15 +13,12 @@ export default class ColorInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        let interpolationFactor = (time - this._keyframe.time)
-            / (nextKeyframe.time - this._keyframe.time);
-
         let {r:r1, g:g1, b:b1} =this._hexToRGB(this._keyframe[this._parameter]);
         let {r:r2, g:g2, b:b2} = this._hexToRGB(nextKeyframe[this._parameter]);
 
-        let r = Math.round(r1 + (r2 - r1) * interpolationFactor);
-        let g = Math.round(g1 + (g2 - g1) * interpolationFactor);
-        let b = Math.round(b1 + (b2 - b1) * interpolationFactor);
+        let r = Math.round(r1 + (r2 - r1) * time);
+        let g = Math.round(g1 + (g2 - g1) * time);
+        let b = Math.round(b1 + (b2 - b1) * time);
 
         return this._rgbToHex(r, g, b);
     }

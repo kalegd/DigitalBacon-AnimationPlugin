@@ -36,18 +36,15 @@ export default class RotationInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        let interpolationFactor = (time - this._keyframe.time)
-            / (nextKeyframe.time - this._keyframe.time);
-
         workingQuaternions[0].slerpQuaternions(this._keyframe.object.quaternion,
-            nextKeyframe.object.quaternion, interpolationFactor).normalize();
+            nextKeyframe.object.quaternion, time).normalize();
         workingEuler.setFromQuaternion(workingQuaternions[0]);
 
         return workingEuler.toArray();
     }
 
     _getStepValue(time, nextKeyframe) {
-        if(time < nextKeyframe.time)
+        if(time < 1)
             return this._keyframe['rotation'];
         return nextKeyframe['rotation'];
     }

@@ -19,14 +19,10 @@ export default class VectorInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        let interpolationFactor = (time - this._keyframe.time)
-            / (nextKeyframe.time - this._keyframe.time);
-
         let firstValue = this._keyframe[this._parameter].slice();
         let nextValue = nextKeyframe[this._parameter].slice();
         for(let i = 0; i < firstValue.length; i++) {
-            firstValue[i] = (nextValue[i] - firstValue[i]) * interpolationFactor
-                + firstValue[i];
+            firstValue[i] = (nextValue[i] - firstValue[i]) * time+firstValue[i];
         }
         return firstValue;
     }

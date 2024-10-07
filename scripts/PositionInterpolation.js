@@ -29,18 +29,15 @@ export default class PositionInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        let interpolationFactor = (time - this._keyframe.time)
-            / (nextKeyframe.time - this._keyframe.time);
-
         workingVector3.copy(nextKeyframe.object.position)
             .sub(this._keyframe.object.position)
-            .multiplyScalar(interpolationFactor)
+            .multiplyScalar(time)
             .add(this._keyframe.object.position);
         return workingVector3.toArray();
     }
 
     _getStepValue(time, nextKeyframe) {
-        if(time < nextKeyframe.time)
+        if(time < 1)
             return this._keyframe['position'];
         return nextKeyframe['position'];
     }

@@ -30,18 +30,15 @@ export default class ScaleInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        let interpolationFactor = (time - this._keyframe.time)
-            / (nextKeyframe.time - this._keyframe.time);
-
         workingVector3s[0].copy(nextKeyframe.object.scale)
             .sub(this._keyframe.object.scale)
-            .multiplyScalar(interpolationFactor)
+            .multiplyScalar(time)
             .add(this._keyframe.object.scale);
         return workingVector3s[0].toArray();
     }
 
     _getStepValue(time, nextKeyframe) {
-        if(time < nextKeyframe.time)
+        if(time < 1)
             return this._keyframe['scale'];
         return nextKeyframe['scale'];
     }

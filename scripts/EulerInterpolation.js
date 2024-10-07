@@ -22,14 +22,11 @@ export default class EulerInterpolation extends Interpolation {
     }
 
     _getLinearValue(time, nextKeyframe) {
-        let interpolationFactor = (time - this._keyframe.time)
-            / (nextKeyframe.time - this._keyframe.time);
-
         workingEulers[0].fromArray(this._keyframe[this._parameter]);
         workingEulers[1].fromArray(nextKeyframe[this._parameter]);
         workingQuaternions[0].setFromEuler(workingEulers[0]);
         workingQuaternions[1].setFromEuler(workingEulers[1]);
-        workingQuaternions[0].slerp(workingQuaternions[1], interpolationFactor);
+        workingQuaternions[0].slerp(workingQuaternions[1], time);
         workingEulers[0].setFromQuaternion(workingQuaternions[0]);
 
         return workingEulers[0].toArray();
