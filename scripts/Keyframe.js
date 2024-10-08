@@ -96,6 +96,7 @@ export default class Keyframe extends CustomAssetEntity {
 
     set time(time) {
         this._time = time;
+        if(this._animationPath) this._animationPath.updateKeyframes();
     }
 
     addInterpolation(interpolationId) {
@@ -108,12 +109,15 @@ export default class Keyframe extends CustomAssetEntity {
 
     addParameter(field, id) {
         this.parameters[id] = field;
+        if(this._animationPath) this._animationPath.updateKeyframes();
         if(assetEntityParameters.includes(field.parameter)) {
             if(!this._mesh) this._createMesh();
-            let asset = this._animationPath._animatedAssets.values().next()
-                .value;
-            if(asset)
-                this[field.parameter] = asset[field.parameter];
+            if(isEditor() && this._animationPath) {
+                let asset = this._animationPath._animatedAssets.values().next()
+                    .value;
+                if(asset)
+                    this[field.parameter] = asset[field.parameter];
+            }
             return;
         }
         Object.defineProperty(this, field.parameter, {
@@ -184,8 +188,6 @@ if(EditorHelpers) {
                 let page = menuController.getPage('ASSET_SELECT');
                 page.setContent(params, (id) => {
                     let field = params[id];
-                    if(field.parameter == 'position')
-                        this._setPositionFromMenu();
                     this._asset.addParameter(field, id);
                     let input;
                     if(this._menuFieldsMap[field.parameter]) {
@@ -271,17 +273,6 @@ if(EditorHelpers) {
             fieldCopy['Name'] = fieldCopy['name'];
             fieldCopy.type = fieldCopy.type.name;
             return fieldCopy;
-        }
-
-        _setPositionFromMenu() {
-            let menuController = getMenuController();
-            menuController.getPosition(vector3s[0]);
-            menuController.getDirection(vector3s[1]).normalize()
-                .divideScalar(4);
-            vector3s[0].sub(vector3s[1]).roundWithPrecision(5);
-            let position = vector3s[0].toArray();
-            this._asset.position = position;
-            this._asset.parent.object.worldToLocal(this._asset.object.position);
         }
 
         static fields = [

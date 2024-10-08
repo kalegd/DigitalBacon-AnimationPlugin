@@ -125,6 +125,3 @@ class RotationInterpolationHelper extends InterpolationHelper {
 
 EditorHelperFactory.registerEditorHelper(RotationInterpolationHelper,
     RotationInterpolation);
-
-export { Interpolation };
-export { InterpolationHelper };

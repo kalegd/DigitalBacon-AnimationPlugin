@@ -70,24 +70,7 @@ export default class AnimationPath extends CustomAssetEntity {
         for(let keyframeId of keyframes) {
             this.addKeyframe(keyframeId);
         }
-        this._orderedParameters = {};
-        this._orderedKeyframes = Array.from(this._keyframes);
-        this._orderedKeyframes = this._orderedKeyframes.sort(
-            (a, b) => a.time - b.time);
-        if(!this._orderedKeyframes.length) return;
-        for(let keyframe of this._orderedKeyframes) {
-            for(let id in keyframe.parameters) {
-                let parameter = keyframe.parameters[id].parameter;
-                if(!this._orderedParameters[parameter])
-                    this._orderedParameters[parameter] = [];
-                this._orderedParameters[parameter].push(keyframe);
-            }
-        }
-        this._maxTime = Math.max(this._maxTime,
-            this._orderedKeyframes[this._orderedKeyframes.length - 1].time);
-        if(this._scrollBased) {
-            maxScrollTime = Math.max(maxScrollTime, this._maxTime);
-        }
+        this.updateKeyframes();
     }
 
     set scrollBased(scrollBased) { this._scrollBased = scrollBased; }
@@ -116,6 +99,50 @@ export default class AnimationPath extends CustomAssetEntity {
         if(!keyframe) return;
         this._keyframes.delete(keyframe);
         keyframe.unregisterAnimationPath(this);
+    }
+
+    getNextKeyframeFor(parameter, previousKeyframe) {
+        let keyframes = this._orderedParameters[parameter];
+        if(!keyframes) return;
+        for(let i = 0; i < keyframes.length; i++) {
+            let keyframe = keyframes[i];
+            if(keyframe == previousKeyframe) {
+                if(i == keyframes.length - 1) return;
+                return keyframes[i + 1];
+            }
+        }
+    }
+
+    updateKeyframes() {
+        this._orderedParameters = {};
+        this._orderedKeyframes = Array.from(this._keyframes);
+        this._orderedKeyframes = this._orderedKeyframes.sort(
+            (a, b) => a.time - b.time);
+        if(!this._orderedKeyframes.length) return;
+        for(let keyframe of this._orderedKeyframes) {
+            for(let id in keyframe.parameters) {
+                let parameter = keyframe.parameters[id].parameter;
+                if(!this._orderedParameters[parameter])
+                    this._orderedParameters[parameter] = [];
+                this._orderedParameters[parameter].push(keyframe);
+            }
+        }
+        this._maxTime = Math.max(this._maxTime,
+            this._orderedKeyframes[this._orderedKeyframes.length - 1].time);
+        if(this._scrollBased) {
+            maxScrollTime = Math.max(maxScrollTime, this._maxTime);
+        }
+        this._updatePositionInterpolationCurves();
+    }
+
+    _updatePositionInterpolationCurves() {
+        console.log("hi");
+        let keyframes = this._orderedParameters['position'];
+        if(!keyframes) return;
+        for(let keyframe of keyframes) {
+            let interpolation = keyframe._parameterInterpolations['position'];
+            if(interpolation) interpolation.updateCurve();
+        }
     }
 
     _setTime(time) {
