@@ -14,7 +14,7 @@ export default class TextInterpolation extends Interpolation {
         return TextInterpolation.assetName;
     }
 
-    static assetId = '6599906d-6fdc-4a51-9468-7e5eb3401b97';
+    static assetId = '54593ea0-ace0-41d2-ac4a-4147a92356b7';
     static assetName = 'Text Interpolation';
     static isPrivate = true;
 }

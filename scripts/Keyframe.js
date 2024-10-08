@@ -110,6 +110,10 @@ export default class Keyframe extends CustomAssetEntity {
         this.parameters[id] = field;
         if(assetEntityParameters.includes(field.parameter)) {
             if(!this._mesh) this._createMesh();
+            let asset = this._animationPath._animatedAssets.values().next()
+                .value;
+            if(asset)
+                this[field.parameter] = asset[field.parameter];
             return;
         }
         Object.defineProperty(this, field.parameter, {
@@ -229,8 +233,8 @@ if(EditorHelpers) {
                 parameter: field.parameter,
                 name: field.name,
             };
-            if(field.type in parameterToAssetId) {
-                assetId = parameterToAssetId[field.type];
+            if(field.parameter in parameterToAssetId) {
+                assetId = parameterToAssetId[field.parameter];
             } else if(field.type in fieldToAssetId) {
                 assetId = fieldToAssetId[field.type];
             } else {

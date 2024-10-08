@@ -27,7 +27,7 @@ export default class VectorInterpolation extends Interpolation {
         return firstValue;
     }
 
-    static assetId = '3dcb0b91-80fc-4aaf-aac4-a991521c906c';
+    static assetId = '2ab2e72d-14ae-4f89-8b0b-ae23e7f7259b';
     static assetName = 'Vector Interpolation';
     static isPrivate = true;
 }

@@ -32,7 +32,7 @@ export default class EulerInterpolation extends Interpolation {
         return workingEulers[0].toArray();
     }
 
-    static assetId = 'c8d59d21-88f1-4431-aefc-614b9ab58433';
+    static assetId = '02fc385c-c981-445f-a448-4ea2b5729953';
     static assetName = 'Euler Interpolation';
     static isPrivate = true;
 }
