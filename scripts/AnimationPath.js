@@ -1,15 +1,17 @@
+import AnimationController from 'http://localhost:8000/scripts/AnimationController.js';
 import Keyframe from 'http://localhost:8000/scripts/Keyframe.js';
 
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, THREE, isEditor, isImmersionDisabled } = window.DigitalBacon;
+const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, Scene, THREE, isEditor, isImmersionDisabled } = window.DigitalBacon;
 const { AssetEntity, CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
-const { AssetSetField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
+const { AssetSetField, ButtonField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
 
 const workingEuler = new THREE.Euler();
 const workingQuaternion = new THREE.Quaternion();
 const workingVector3 = new THREE.Vector3();
 
 var maxScrollTime = 0;
+var animationController;
 
 export default class AnimationPath extends CustomAssetEntity {
     constructor(params = {}) {
@@ -127,7 +129,7 @@ export default class AnimationPath extends CustomAssetEntity {
                 this._orderedParameters[parameter].push(keyframe);
             }
         }
-        this._maxTime = Math.max(this._maxTime,
+        this._maxTime = Math.max(0,
             this._orderedKeyframes[this._orderedKeyframes.length - 1].time);
         if(this._scrollBased) {
             maxScrollTime = Math.max(maxScrollTime, this._maxTime);
@@ -192,6 +194,9 @@ export default class AnimationPath extends CustomAssetEntity {
 
     static assetId = '2d227485-0b34-40a4-873d-2a0782d034c6';
     static assetName = 'Animation Path';
+    static getMaxTime() {
+        return maxScrollTime;
+    }
 }
 
 ProjectHandler.registerAsset(AnimationPath);
@@ -214,6 +219,20 @@ if(EditorHelpers) {
             super(asset);
         }
 
+        preview() {
+            if(!animationController) {
+                animationController = new AnimationController();
+                animationController.registerAnimationPathClass(AnimationPath);
+                Scene.object.add(animationController.object);
+                EditorHelperFactory.addEditorHelperTo(
+                    animationController);
+                animationController.editorHelper.updateVisualEdit(true);
+            } else {
+                Scene.object.add(animationController.object);
+            }
+            animationController.setPositionFromMenu();
+        }
+
         static fields = [
             "visualEdit",
             { "parameter": "scrollBased", "name": "Scroll Based",
@@ -228,6 +247,8 @@ if(EditorHelpers) {
                 "removeFunction": "removeKeyframe",
                 "newOptionsFunction": ()=>[Keyframe.assetId],
                 "type": AssetSetField },
+            { "parameter": "preview", "name": "Preview",
+                "type": ButtonField },
             "position",
             "rotation",
             "scale",
