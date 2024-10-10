@@ -65,7 +65,6 @@ export default class AnimationController extends CustomAssetEntity {
     }
 
     _startPreview() {
-        console.log("TODO");
         let assets = ProjectHandler.getAssets();
         this._pathAssets = [];
         this._maxTime = 0;

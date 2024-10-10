@@ -4,6 +4,7 @@
   "description": "Plugin for Digital Bacon that adds animation",
   "main": "AnimationPath.js",
   "scripts": {
+    "build": "rollup -c --bundleConfigAsCjs",
     "start": "http-server -c-1 -p 8000",
     "start-ssl": "http-server -S -c cert.pem -c-1 -p 8000",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -25,7 +26,11 @@
   },
   "homepage": "https://github.com/kalegd/DigitalBacon-AnimationPlugin#readme",
   "dependencies": {
+    "@rollup/plugin-replace": "^6.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
     "digitalbacon": "^0.3.7",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "rollup": "^4.24.0",
+    "rollup-plugin-root-import": "^1.0.0"
   }
 }

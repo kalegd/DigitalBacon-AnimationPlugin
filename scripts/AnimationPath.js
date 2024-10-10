@@ -138,7 +138,6 @@ export default class AnimationPath extends CustomAssetEntity {
     }
 
     _updatePositionInterpolationCurves() {
-        console.log("hi");
         let keyframes = this._orderedParameters['position'];
         if(!keyframes) return;
         for(let keyframe of keyframes) {
