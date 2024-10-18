@@ -36,8 +36,21 @@ export default class AnimationController extends CustomAssetEntity {
             color: 0xffffff,
             fontSize: 0.019,
         });
+        let row = new DigitalBaconUI.Span();
+        let seekLabel = new DigitalBaconUI.Text('Seek', {
+            color: 0xffffff,
+            fontSize: 0.019,
+        });
+        let numberInput = new DigitalBaconUI.NumberInput({
+            fontSize: 0.019,
+            height: 0.03,
+            width: 0.17,
+        });
+        row.add(seekLabel);
+        row.add(numberInput);
         startButton.add(startText);
         body.add(startButton);
+        body.add(row);
         this._object.add(body);
         startButton.onClickAndTouch = () => this._startPreview();
         startButton.pointerInteractable.addHoveredCallback((hovered) => {
@@ -47,6 +60,15 @@ export default class AnimationController extends CustomAssetEntity {
                 startButton.removeStyle(hoveredButtonStyle);
             }
         });
+        numberInput.onChange = () => {
+            let assets = ProjectHandler.getAssets();
+            let pathAssets = [];
+            let value = Number.parseFloat(numberInput.value);
+            for(let id in assets) {
+                if(assets[id].assetId == ANIMATION_PATH_ID)
+                    assets[id]._setTime(value);
+            }
+        };
     }
 
     setPositionFromMenu() {

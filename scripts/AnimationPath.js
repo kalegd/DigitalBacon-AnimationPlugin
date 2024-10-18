@@ -16,6 +16,7 @@ var animationController;
 export default class AnimationPath extends CustomAssetEntity {
     constructor(params = {}) {
         params['assetId'] = AnimationPath.assetId;
+        params['position'] = params['rotation'] = [0,0,0];
         super(params);
         this._animatedAssets = new Set();
         this._keyframes = new Set();
@@ -153,7 +154,7 @@ export default class AnimationPath extends CustomAssetEntity {
             let nextKeyframe;
             for(let i = 1; i < keyframes.length; i++) {
                 nextKeyframe = keyframes[i];
-                if(keyframe.time <= time && time <= nextKeyframe.time) break;
+                if(time <= nextKeyframe.time) break;
                 keyframe = nextKeyframe;
                 nextKeyframe = null;
             }
@@ -248,6 +249,7 @@ if(EditorHelpers) {
                 "type": AssetSetField },
             { "parameter": "preview", "name": "Preview",
                 "type": ButtonField },
+            "parentId",
             "position",
             "rotation",
             "scale",

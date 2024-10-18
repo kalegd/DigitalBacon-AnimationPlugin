@@ -36,8 +36,21 @@ class AnimationController extends CustomAssetEntity$3 {
             color: 0xffffff,
             fontSize: 0.019,
         });
+        let row = new DigitalBaconUI.Span();
+        let seekLabel = new DigitalBaconUI.Text('Seek', {
+            color: 0xffffff,
+            fontSize: 0.019,
+        });
+        let numberInput = new DigitalBaconUI.NumberInput({
+            fontSize: 0.019,
+            height: 0.03,
+            width: 0.17,
+        });
+        row.add(seekLabel);
+        row.add(numberInput);
         startButton.add(startText);
         body.add(startButton);
+        body.add(row);
         this._object.add(body);
         startButton.onClickAndTouch = () => this._startPreview();
         startButton.pointerInteractable.addHoveredCallback((hovered) => {
@@ -47,6 +60,14 @@ class AnimationController extends CustomAssetEntity$3 {
                 startButton.removeStyle(hoveredButtonStyle);
             }
         });
+        numberInput.onChange = () => {
+            let assets = ProjectHandler$c.getAssets();
+            let value = Number.parseFloat(numberInput.value);
+            for(let id in assets) {
+                if(assets[id].assetId == ANIMATION_PATH_ID)
+                    assets[id]._setTime(value);
+            }
+        };
     }
 
     setPositionFromMenu() {
@@ -770,6 +791,7 @@ class RotationInterpolation extends Interpolation {
 
         let sign = dot < 0 ? -1 : 1;
         if(this._revolutions % 2 == 1) sign *= -1;
+        if(this._useLongPath) sign *= -1;
         let adjustedB = sign === -1 ? [-B[0], -B[1], -B[2], -B[3]] : B;
 
         // Calculate the angle between the quaternions
@@ -1086,7 +1108,7 @@ class Keyframe extends CustomAssetEntity$1 {
         this.parameters[id] = field;
         if(this._animationPath) this._animationPath.updateKeyframes();
         if(assetEntityParameters.includes(field.parameter)) {
-            if(!this._mesh) this._createMesh();
+            if(field.parameter == 'position' && !this._mesh) this._createMesh();
             if(isEditor$1() && this._animationPath) {
                 let asset = this._animationPath._animatedAssets.values().next()
                     .value;
@@ -1105,7 +1127,6 @@ class Keyframe extends CustomAssetEntity$1 {
     }
 
     removeInterpolation(interpolationId) {
-        this._interpolations.push(interpolationId);
         let interpolation = ProjectHandler$1.getAsset(interpolationId);
         if(!interpolation) return;
         this._interpolations.delete(interpolation);
@@ -1280,6 +1301,7 @@ var animationController;
 class AnimationPath extends CustomAssetEntity {
     constructor(params = {}) {
         params['assetId'] = AnimationPath.assetId;
+        params['position'] = params['rotation'] = [0,0,0];
         super(params);
         this._animatedAssets = new Set();
         this._keyframes = new Set();
@@ -1417,7 +1439,7 @@ class AnimationPath extends CustomAssetEntity {
             let nextKeyframe;
             for(let i = 1; i < keyframes.length; i++) {
                 nextKeyframe = keyframes[i];
-                if(keyframe.time <= time && time <= nextKeyframe.time) break;
+                if(time <= nextKeyframe.time) break;
                 keyframe = nextKeyframe;
                 nextKeyframe = null;
             }
@@ -1512,6 +1534,7 @@ if(EditorHelpers) {
                 "type": AssetSetField },
             { "parameter": "preview", "name": "Preview",
                 "type": ButtonField },
+            "parentId",
             "position",
             "rotation",
             "scale",

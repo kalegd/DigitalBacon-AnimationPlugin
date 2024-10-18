@@ -111,7 +111,7 @@ export default class Keyframe extends CustomAssetEntity {
         this.parameters[id] = field;
         if(this._animationPath) this._animationPath.updateKeyframes();
         if(assetEntityParameters.includes(field.parameter)) {
-            if(!this._mesh) this._createMesh();
+            if(field.parameter == 'position' && !this._mesh) this._createMesh();
             if(isEditor() && this._animationPath) {
                 let asset = this._animationPath._animatedAssets.values().next()
                     .value;
@@ -130,7 +130,6 @@ export default class Keyframe extends CustomAssetEntity {
     }
 
     removeInterpolation(interpolationId) {
-        this._interpolations.push(interpolationId);
         let interpolation = ProjectHandler.getAsset(interpolationId);
         if(!interpolation) return;
         this._interpolations.delete(interpolation);

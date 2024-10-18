@@ -65,6 +65,7 @@ export default class RotationInterpolation extends Interpolation {
 
         let sign = dot < 0 ? -1 : 1;
         if(this._revolutions % 2 == 1) sign *= -1;
+        if(this._useLongPath) sign *= -1;
         let adjustedB = sign === -1 ? [-B[0], -B[1], -B[2], -B[3]] : B;
 
         // Calculate the angle between the quaternions
