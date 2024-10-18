@@ -32,6 +32,12 @@ export default class ControlPoint extends CustomAssetEntity {
         return ControlPoint.assetName;
     }
 
+    exportParams() {
+        let params = super.exportParams();
+        params['parentId'] = null;
+        return params;
+    }
+
     _setPositionFromMenu() {
         let menuController = getMenuController();
         menuController.getPosition(vector3s[0]);
@@ -46,7 +52,8 @@ export default class ControlPoint extends CustomAssetEntity {
     registerInterpolation(interpolation) {
         this._object.visible = true;
         this._interpolation = interpolation;
-        this.parentId = interpolation._keyframe?._animationPath?.id;
+        let animationPath = interpolation._keyframe?._animationPath;
+        if(animationPath) this.addTo(animationPath);
         this.visualEdit = interpolation._keyframe?.visualEdit;
     }
 

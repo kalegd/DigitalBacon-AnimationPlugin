@@ -11,7 +11,7 @@ export default class AnimationController extends CustomAssetEntity {
         super(params);
         if(!isEditor()) return;
         this._createMesh();
-        window.ac = this;
+        this._speed = 1;
     }
 
     _getDefaultName() {
@@ -36,21 +36,25 @@ export default class AnimationController extends CustomAssetEntity {
             color: 0xffffff,
             fontSize: 0.019,
         });
-        let row = new DigitalBaconUI.Span();
-        let seekLabel = new DigitalBaconUI.Text('Seek', {
-            color: 0xffffff,
-            fontSize: 0.019,
+        let seekRow = this._createNumberRow('Seek', (text) => {
+            let assets = ProjectHandler.getAssets();
+            let pathAssets = [];
+            let value = Number.parseFloat(text);
+            for(let id in assets) {
+                if(assets[id].assetId == ANIMATION_PATH_ID)
+                    assets[id]._setTime(value);
+            }
         });
-        let numberInput = new DigitalBaconUI.NumberInput({
-            fontSize: 0.019,
-            height: 0.03,
-            width: 0.17,
+        let speedRow = this._createNumberRow('Speed', (text) => {
+            let assets = ProjectHandler.getAssets();
+            let pathAssets = [];
+            let value = Number.parseFloat(text);
+            this._speed = value || 1;
         });
-        row.add(seekLabel);
-        row.add(numberInput);
         startButton.add(startText);
         body.add(startButton);
-        body.add(row);
+        body.add(seekRow);
+        body.add(speedRow);
         this._object.add(body);
         startButton.onClickAndTouch = () => this._startPreview();
         startButton.pointerInteractable.addHoveredCallback((hovered) => {
@@ -60,15 +64,24 @@ export default class AnimationController extends CustomAssetEntity {
                 startButton.removeStyle(hoveredButtonStyle);
             }
         });
-        numberInput.onChange = () => {
-            let assets = ProjectHandler.getAssets();
-            let pathAssets = [];
-            let value = Number.parseFloat(numberInput.value);
-            for(let id in assets) {
-                if(assets[id].assetId == ANIMATION_PATH_ID)
-                    assets[id]._setTime(value);
-            }
-        };
+    }
+
+    _createNumberRow(title, onChange) {
+        let row = new DigitalBaconUI.Span();
+        let label = new DigitalBaconUI.Text(title, {
+            color: 0xffffff,
+            fontSize: 0.019,
+        });
+        let numberInput = new DigitalBaconUI.NumberInput({
+            fontSize: 0.019,
+            height: 0.03,
+            width: 0.17,
+        });
+        numberInput.onChange = onChange;
+        numberInput.onEnter = () => numberInput.blur();
+        row.add(label);
+        row.add(numberInput);
+        return row;
     }
 
     setPositionFromMenu() {
@@ -103,7 +116,7 @@ export default class AnimationController extends CustomAssetEntity {
     }
 
     update(timeDelta) {
-        this._time += (this._reverse) ? -timeDelta : timeDelta;
+        this._time += this._speed * ((this._reverse) ? -timeDelta : timeDelta);
         if(this._time > this._maxTime) {
             this._reverse = true;
         } else if(this._time < 0) {

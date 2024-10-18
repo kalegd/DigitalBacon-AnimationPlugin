@@ -37,6 +37,14 @@ export default class PositionInterpolation extends Interpolation {
         return params;
     }
 
+    registerKeyframe(keyframe) {
+        super.registerKeyframe(keyframe);
+        for(let controlPoint of this._controlPoints) {
+            controlPoint.registerInterpolation(this);
+        }
+        this.updateCurve();
+    }
+
     getValue(time, nextKeyframe) {
         let value = super.getValue(time, nextKeyframe);
         if(!value) return value;

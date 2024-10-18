@@ -11,7 +11,7 @@ class AnimationController extends CustomAssetEntity$3 {
         super(params);
         if(!isEditor$4()) return;
         this._createMesh();
-        window.ac = this;
+        this._speed = 1;
     }
 
     _getDefaultName() {
@@ -36,21 +36,23 @@ class AnimationController extends CustomAssetEntity$3 {
             color: 0xffffff,
             fontSize: 0.019,
         });
-        let row = new DigitalBaconUI.Span();
-        let seekLabel = new DigitalBaconUI.Text('Seek', {
-            color: 0xffffff,
-            fontSize: 0.019,
+        let seekRow = this._createNumberRow('Seek', (text) => {
+            let assets = ProjectHandler$c.getAssets();
+            let value = Number.parseFloat(text);
+            for(let id in assets) {
+                if(assets[id].assetId == ANIMATION_PATH_ID)
+                    assets[id]._setTime(value);
+            }
         });
-        let numberInput = new DigitalBaconUI.NumberInput({
-            fontSize: 0.019,
-            height: 0.03,
-            width: 0.17,
+        let speedRow = this._createNumberRow('Speed', (text) => {
+            ProjectHandler$c.getAssets();
+            let value = Number.parseFloat(text);
+            this._speed = value || 1;
         });
-        row.add(seekLabel);
-        row.add(numberInput);
         startButton.add(startText);
         body.add(startButton);
-        body.add(row);
+        body.add(seekRow);
+        body.add(speedRow);
         this._object.add(body);
         startButton.onClickAndTouch = () => this._startPreview();
         startButton.pointerInteractable.addHoveredCallback((hovered) => {
@@ -60,14 +62,24 @@ class AnimationController extends CustomAssetEntity$3 {
                 startButton.removeStyle(hoveredButtonStyle);
             }
         });
-        numberInput.onChange = () => {
-            let assets = ProjectHandler$c.getAssets();
-            let value = Number.parseFloat(numberInput.value);
-            for(let id in assets) {
-                if(assets[id].assetId == ANIMATION_PATH_ID)
-                    assets[id]._setTime(value);
-            }
-        };
+    }
+
+    _createNumberRow(title, onChange) {
+        let row = new DigitalBaconUI.Span();
+        let label = new DigitalBaconUI.Text(title, {
+            color: 0xffffff,
+            fontSize: 0.019,
+        });
+        let numberInput = new DigitalBaconUI.NumberInput({
+            fontSize: 0.019,
+            height: 0.03,
+            width: 0.17,
+        });
+        numberInput.onChange = onChange;
+        numberInput.onEnter = () => numberInput.blur();
+        row.add(label);
+        row.add(numberInput);
+        return row;
     }
 
     setPositionFromMenu() {
@@ -102,7 +114,7 @@ class AnimationController extends CustomAssetEntity$3 {
     }
 
     update(timeDelta) {
-        this._time += (this._reverse) ? -timeDelta : timeDelta;
+        this._time += this._speed * ((this._reverse) ? -timeDelta : timeDelta);
         if(this._time > this._maxTime) {
             this._reverse = true;
         } else if(this._time < 0) {
@@ -498,6 +510,12 @@ class ControlPoint extends CustomAssetEntity$2 {
         return ControlPoint.assetName;
     }
 
+    exportParams() {
+        let params = super.exportParams();
+        params['parentId'] = null;
+        return params;
+    }
+
     _setPositionFromMenu() {
         let menuController = getMenuController$1();
         menuController.getPosition(vector3s[0]);
@@ -512,7 +530,8 @@ class ControlPoint extends CustomAssetEntity$2 {
     registerInterpolation(interpolation) {
         this._object.visible = true;
         this._interpolation = interpolation;
-        this.parentId = interpolation._keyframe?._animationPath?.id;
+        let animationPath = interpolation._keyframe?._animationPath;
+        if(animationPath) this.addTo(animationPath);
         this.visualEdit = interpolation._keyframe?.visualEdit;
     }
 
@@ -589,6 +608,14 @@ class PositionInterpolation extends Interpolation {
         params['controlPoints'] = this.controlPoints;
         params['curveType'] = this.curveType;
         return params;
+    }
+
+    registerKeyframe(keyframe) {
+        super.registerKeyframe(keyframe);
+        for(let controlPoint of this._controlPoints) {
+            controlPoint.registerInterpolation(this);
+        }
+        this.updateCurve();
     }
 
     getValue(time, nextKeyframe) {
@@ -1072,6 +1099,7 @@ class Keyframe extends CustomAssetEntity$1 {
         params['time'] = this._time;
         params['parameters'] = this.parameters;
         params['interpolations'] = this.interpolations;
+        params['parentId'] = null;
         return params;
     }
 
@@ -1141,8 +1169,11 @@ class Keyframe extends CustomAssetEntity$1 {
     registerAnimationPath(animationPath) {
         this._object.visible = true;
         this._animationPath = animationPath;
-        this.parentId = animationPath.id;
+        this.addTo(animationPath);
         this.visualEdit = animationPath.visualEdit;
+        for(let interpolation of this._interpolations) {
+            interpolation.registerKeyframe(this);
+        }
     }
 
     unregisterAnimationPath(animationPath) {

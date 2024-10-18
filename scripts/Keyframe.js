@@ -75,6 +75,7 @@ export default class Keyframe extends CustomAssetEntity {
         params['time'] = this._time;
         params['parameters'] = this.parameters;
         params['interpolations'] = this.interpolations;
+        params['parentId'] = null;
         return params;
     }
 
@@ -144,8 +145,11 @@ export default class Keyframe extends CustomAssetEntity {
     registerAnimationPath(animationPath) {
         this._object.visible = true;
         this._animationPath = animationPath;
-        this.parentId = animationPath.id;
+        this.addTo(animationPath);
         this.visualEdit = animationPath.visualEdit;
+        for(let interpolation of this._interpolations) {
+            interpolation.registerKeyframe(this);
+        }
     }
 
     unregisterAnimationPath(animationPath) {
