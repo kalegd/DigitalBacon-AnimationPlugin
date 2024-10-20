@@ -92,14 +92,13 @@ export default class AnimationPath extends CustomAssetEntity {
     }
 
     removeAnimatedAsset(animatedAssetId) {
-        let animatedAsset = ProjectHandler.getAsset(animatedAssetId);
+        let animatedAsset = ProjectHandler.getSessionAsset(animatedAssetId);
         if(!animatedAsset) return;
         this._animatedAssets.delete(animatedAsset);
     }
 
     removeKeyframe(keyframeId) {
-        let keyframe = ProjectHandler.getAsset(keyframeId);
-        if(!keyframe) return;
+        let keyframe = ProjectHandler.getSessionAsset(keyframeId);
         this._keyframes.delete(keyframe);
     }
 

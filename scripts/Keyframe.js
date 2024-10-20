@@ -135,6 +135,15 @@ export default class Keyframe extends CustomAssetEntity {
         return interpolation.getValue(time, nextKeyframe);
     }
 
+    onAddToProject() {
+        if(this._animationPath) this._animationPath.addKeyframe(this._id);
+    }
+
+    onRemoveFromProject() {
+        super.onRemoveFromProject();
+        this._animationPath.removeKeyframe(this._id);
+    }
+
     static assetId = '401fcf91-49ef-480b-992d-e55ac0c65d4e';
     static assetName = 'Keyframe';
     static isPrivate = true;
