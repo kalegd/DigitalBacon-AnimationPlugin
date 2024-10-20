@@ -101,7 +101,6 @@ export default class AnimationPath extends CustomAssetEntity {
         let keyframe = ProjectHandler.getAsset(keyframeId);
         if(!keyframe) return;
         this._keyframes.delete(keyframe);
-        keyframe.unregisterAnimationPath(this);
     }
 
     getNextKeyframeFor(parameter, previousKeyframe) {

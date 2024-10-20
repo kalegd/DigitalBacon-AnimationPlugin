@@ -350,6 +350,14 @@ class Interpolation extends CustomAsset {
         return nextKeyframe[this._parameter];
     }
 
+    onAddToProject() {
+        if(this._keyframe) this._keyframe.addInterpolation(this._id);
+    }
+
+    onRemoveFromProject() {
+        this._keyframe.removeInterpolation(this._id);
+    }
+
     static assetName = 'Interpolation';
     static isPrivate = true;
 }
@@ -482,28 +490,17 @@ const { CustomAssetEntityHelper: CustomAssetEntityHelper$2, EditorHelperFactory:
 CustomAssetEntityHelper$2.FieldTypes;
 
 const vector3s = [new THREE$5.Vector3(), new THREE$5.Vector3()];
-var geometry, material$1;
+var geometry$1, material$2;
 
 class ControlPoint extends CustomAssetEntity$2 {
     constructor(params = {}) {
         params['assetId'] = ControlPoint.assetId;
         super(params);
-        this._createMesh();
         if(!params['position']) this._setPositionFromMenu();
         if(isEditor$3()) {
             this._lastPosition = this.position;
             this.update = this._editorUpdate;
         }
-    }
-
-    _createMesh() {
-        if(!isEditor$3()) return;
-        if(!geometry) {
-            geometry = new THREE$5.SphereGeometry(0.025);
-            material$1 = new THREE$5.MeshBasicMaterial({ color: 0xff0000 });
-        }
-        this._mesh = new THREE$5.Mesh(geometry, material$1);
-        this._object.add(this._mesh);
     }
 
     _getDefaultName() {
@@ -532,14 +529,6 @@ class ControlPoint extends CustomAssetEntity$2 {
         this._interpolation = interpolation;
         let animationPath = interpolation._keyframe?._animationPath;
         if(animationPath) this.addTo(animationPath);
-        this.visualEdit = interpolation._keyframe?.visualEdit;
-    }
-
-    unregisterInterpolation(interpolation) {
-        if(interpolation != this._interpolation) return;
-        this._object.visible = false;
-        this._interpolation = null;
-        this.visualEdit = false;
     }
 
     _editorUpdate() {
@@ -564,9 +553,29 @@ if(EditorHelpers$6) {
     class ControlPointHelper extends CustomAssetEntityHelper$2 {
         constructor(asset) {
             super(asset);
+            this._createMesh();
+        }
+
+        _createMesh() {
+            if(!geometry$1) {
+                geometry$1 = new THREE$5.SphereGeometry(0.025);
+                material$2 = new THREE$5.MeshBasicMaterial({ color: 0xff0000 });
+            }
+            this._mesh = new THREE$5.Mesh(geometry$1, material$2);
+            if(this._asset.visualEdit) this._object.add(this._mesh);
+        }
+
+        updateVisualEdit(isVisualEdit) {
+            if(isVisualEdit) {
+                this._object.add(this._mesh);
+            } else {
+                this._object.remove(this._mesh);
+            }
+            super.updateVisualEdit(isVisualEdit);
         }
 
         static fields = [
+            "visualEdit",
             "position"
         ];
     }
@@ -584,7 +593,7 @@ const CURVE_TYPES = {
     Spline: 'spline',
 };
 const workingVector3$1 = new THREE$4.Vector3();
-var material;
+var material$1;
 
 class PositionInterpolation extends Interpolation {
     constructor(params = {}) {
@@ -717,10 +726,10 @@ class PositionInterpolation extends Interpolation {
         if(!isEditor$2()) return;
         let points = this._curve.getPoints(50);
         let geometry = new THREE$4.BufferGeometry().setFromPoints(points);
-        if(!material) material = new THREE$4.LineDashedMaterial({
+        if(!material$1) material$1 = new THREE$4.LineDashedMaterial({
             color: 0xffff00,
         });
-        this._curveObject = new THREE$4.Line(geometry, material);
+        this._curveObject = new THREE$4.Line(geometry, material$1);
         this._keyframe._animationPath.object.add(this._curveObject);
     }
 
@@ -1039,7 +1048,7 @@ const { AssetSetField: AssetSetField$1, ButtonField: ButtonField$1, CheckboxFiel
 const { numberOr } = utils;
 
 const PiggyImageUrl = 'https://cdn.jsdelivr.net/gh/kalegd/digitalbacon-plugins@latest/textures/Digital_Bacon_Piggy.jpg';
-var piggyTexture;
+var piggyTexture, geometry, material;
 
 [new THREE$1.Vector3(), new THREE$1.Vector3()];
 const supportedFields = new Set([CheckboxField$1, ColorField, EulerField, NumberField, TextField, Vector2Field, Vector3Field]);
@@ -1069,25 +1078,6 @@ class Keyframe extends CustomAssetEntity$1 {
         if(params['parameters']) this.setParameters(params['parameters']);
         if(params['interpolations'])
             this.interpolations = params['interpolations'];
-    }
-
-    _createMesh() {
-        if(!isEditor$1()) return;
-        if(!piggyTexture) {
-            piggyTexture = new THREE$1.TextureLoader().load(PiggyImageUrl);
-            piggyTexture.repeat.x = 5;
-            piggyTexture.repeat.y = 2.5;
-            piggyTexture.offset.x = -3.25;
-            piggyTexture.offset.y = -0.75;
-            piggyTexture.colorSpace = THREE$1.SRGBColorSpace;
-        }
-        let geometry = new THREE$1.SphereGeometry(0.05);
-        let material = new THREE$1.MeshBasicMaterial({
-            color: 0xffffff,
-            map: piggyTexture,
-        });
-        this._mesh = new THREE$1.Mesh(geometry, material);
-        this._object.add(this._mesh);
     }
 
     _getDefaultName() {
@@ -1136,7 +1126,6 @@ class Keyframe extends CustomAssetEntity$1 {
         this.parameters[id] = field;
         if(this._animationPath) this._animationPath.updateKeyframes();
         if(assetEntityParameters.includes(field.parameter)) {
-            if(field.parameter == 'position' && !this._mesh) this._createMesh();
             if(isEditor$1() && this._animationPath) {
                 let asset = this._animationPath._animatedAssets.values().next()
                     .value;
@@ -1155,8 +1144,7 @@ class Keyframe extends CustomAssetEntity$1 {
     }
 
     removeInterpolation(interpolationId) {
-        let interpolation = ProjectHandler$1.getAsset(interpolationId);
-        if(!interpolation) return;
+        let interpolation = ProjectHandler$1.getSessionAsset(interpolationId);
         this._interpolations.delete(interpolation);
     }
 
@@ -1170,17 +1158,9 @@ class Keyframe extends CustomAssetEntity$1 {
         this._object.visible = true;
         this._animationPath = animationPath;
         this.addTo(animationPath);
-        this.visualEdit = animationPath.visualEdit;
         for(let interpolation of this._interpolations) {
             interpolation.registerKeyframe(this);
         }
-    }
-
-    unregisterAnimationPath(animationPath) {
-        if(animationPath != this._animationPath) return;
-        this._object.visible = false;
-        this._animationPath = null;
-        this.visualEdit = false;
     }
 
     interpolate(parameter, time, nextKeyframe) {
@@ -1201,6 +1181,7 @@ if(EditorHelpers$1) {
         constructor(asset) {
             super(asset);
             this._addParameterFields();
+            this._createMesh();
         }
 
         addParameter() {
@@ -1216,6 +1197,8 @@ if(EditorHelpers$1) {
                 page.setContent(params, (id) => {
                     let field = params[id];
                     this._asset.addParameter(field, id);
+                    if(id == 'position' && this._asset.visualEdit)
+                        this._object.add(this._mesh);
                     let input;
                     if(this._menuFieldsMap[field.parameter]) {
                         input = this._menuFieldsMap[field.parameter];
@@ -1283,7 +1266,7 @@ if(EditorHelpers$1) {
                         || field.parameter == 'visualEdit') {
                     continue;
                 }
-                let id = field.type.name + ':' + field.parameter;
+                let id = field.parameter;
                 if(id in params || id in this._asset.parameters) {
                     continue;
                 } else {
@@ -1302,7 +1285,36 @@ if(EditorHelpers$1) {
             return fieldCopy;
         }
 
+        _createMesh() {
+            if(!piggyTexture) {
+                piggyTexture = new THREE$1.TextureLoader().load(PiggyImageUrl);
+                piggyTexture.repeat.x = 5;
+                piggyTexture.repeat.y = 2.5;
+                piggyTexture.offset.x = -3.25;
+                piggyTexture.offset.y = -0.75;
+                piggyTexture.colorSpace = THREE$1.SRGBColorSpace;
+                geometry = new THREE$1.SphereGeometry(0.05);
+                material = new THREE$1.MeshBasicMaterial({
+                    color: 0xffffff,
+                    map: piggyTexture,
+                });
+            }
+            this._mesh = new THREE$1.Mesh(geometry, material);
+            if(this._asset.visualEdit && this._asset.parameters['position'])
+                this._object.add(this._mesh);
+        }
+
+        updateVisualEdit(isVisualEdit) {
+            if(isVisualEdit && this._asset.parameters['position']){
+                this._object.add(this._mesh);
+            } else {
+                this._object.remove(this._mesh);
+            }
+            super.updateVisualEdit(isVisualEdit);
+        }
+
         static fields = [
+            "visualEdit",
             { "parameter": "time", "name": "Time", "min": 0,
                 "type": NumberField },
             { "parameter": "interpolations", "name": "Interpolations",
@@ -1417,7 +1429,6 @@ class AnimationPath extends CustomAssetEntity {
         let keyframe = ProjectHandler.getAsset(keyframeId);
         if(!keyframe) return;
         this._keyframes.delete(keyframe);
-        keyframe.unregisterAnimationPath(this);
     }
 
     getNextKeyframeFor(parameter, previousKeyframe) {

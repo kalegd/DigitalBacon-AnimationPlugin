@@ -10,22 +10,11 @@ export default class ControlPoint extends CustomAssetEntity {
     constructor(params = {}) {
         params['assetId'] = ControlPoint.assetId;
         super(params);
-        this._createMesh();
         if(!params['position']) this._setPositionFromMenu();
         if(isEditor()) {
             this._lastPosition = this.position;
             this.update = this._editorUpdate;
         }
-    }
-
-    _createMesh() {
-        if(!isEditor()) return;
-        if(!geometry) {
-            geometry = new THREE.SphereGeometry(0.025);
-            material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        }
-        this._mesh = new THREE.Mesh(geometry, material);
-        this._object.add(this._mesh);
     }
 
     _getDefaultName() {
@@ -54,14 +43,6 @@ export default class ControlPoint extends CustomAssetEntity {
         this._interpolation = interpolation;
         let animationPath = interpolation._keyframe?._animationPath;
         if(animationPath) this.addTo(animationPath);
-        this.visualEdit = interpolation._keyframe?.visualEdit;
-    }
-
-    unregisterInterpolation(interpolation) {
-        if(interpolation != this._interpolation) return;
-        this._object.visible = false;
-        this._interpolation = null;
-        this.visualEdit = false;
     }
 
     _editorUpdate() {
@@ -87,9 +68,29 @@ if(EditorHelpers) {
     class ControlPointHelper extends CustomAssetEntityHelper {
         constructor(asset) {
             super(asset);
+            this._createMesh();
+        }
+
+        _createMesh() {
+            if(!geometry) {
+                geometry = new THREE.SphereGeometry(0.025);
+                material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            }
+            this._mesh = new THREE.Mesh(geometry, material);
+            if(this._asset.visualEdit) this._object.add(this._mesh);
+        }
+
+        updateVisualEdit(isVisualEdit) {
+            if(isVisualEdit) {
+                this._object.add(this._mesh);
+            } else {
+                this._object.remove(this._mesh);
+            }
+            super.updateVisualEdit(isVisualEdit);
         }
 
         static fields = [
+            "visualEdit",
             "position"
         ];
     }

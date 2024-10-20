@@ -15,7 +15,7 @@ const { AssetSetField, ButtonField, CheckboxField, ColorField, EulerField, Numbe
 const { numberOr } = utils;
 
 const PiggyImageUrl = 'https://cdn.jsdelivr.net/gh/kalegd/digitalbacon-plugins@latest/textures/Digital_Bacon_Piggy.jpg';
-var piggyTexture;
+var piggyTexture, geometry, material;
 
 const vector3s = [new THREE.Vector3(), new THREE.Vector3()];
 const supportedFields = new Set([CheckboxField, ColorField, EulerField, NumberField, TextField, Vector2Field, Vector3Field]);
@@ -45,25 +45,6 @@ export default class Keyframe extends CustomAssetEntity {
         if(params['parameters']) this.setParameters(params['parameters']);
         if(params['interpolations'])
             this.interpolations = params['interpolations'];
-    }
-
-    _createMesh() {
-        if(!isEditor()) return;
-        if(!piggyTexture) {
-            piggyTexture = new THREE.TextureLoader().load(PiggyImageUrl);
-            piggyTexture.repeat.x = 5;
-            piggyTexture.repeat.y = 2.5;
-            piggyTexture.offset.x = -3.25;
-            piggyTexture.offset.y = -0.75;
-            piggyTexture.colorSpace = THREE.SRGBColorSpace;
-        }
-        let geometry = new THREE.SphereGeometry(0.05);
-        let material = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            map: piggyTexture,
-        });
-        this._mesh = new THREE.Mesh(geometry, material);
-        this._object.add(this._mesh);
     }
 
     _getDefaultName() {
@@ -112,7 +93,6 @@ export default class Keyframe extends CustomAssetEntity {
         this.parameters[id] = field;
         if(this._animationPath) this._animationPath.updateKeyframes();
         if(assetEntityParameters.includes(field.parameter)) {
-            if(field.parameter == 'position' && !this._mesh) this._createMesh();
             if(isEditor() && this._animationPath) {
                 let asset = this._animationPath._animatedAssets.values().next()
                     .value;
@@ -131,8 +111,7 @@ export default class Keyframe extends CustomAssetEntity {
     }
 
     removeInterpolation(interpolationId) {
-        let interpolation = ProjectHandler.getAsset(interpolationId);
-        if(!interpolation) return;
+        let interpolation = ProjectHandler.getSessionAsset(interpolationId);
         this._interpolations.delete(interpolation);
     }
 
@@ -146,17 +125,9 @@ export default class Keyframe extends CustomAssetEntity {
         this._object.visible = true;
         this._animationPath = animationPath;
         this.addTo(animationPath);
-        this.visualEdit = animationPath.visualEdit;
         for(let interpolation of this._interpolations) {
             interpolation.registerKeyframe(this);
         }
-    }
-
-    unregisterAnimationPath(animationPath) {
-        if(animationPath != this._animationPath) return;
-        this._object.visible = false;
-        this._animationPath = null;
-        this.visualEdit = false;
     }
 
     interpolate(parameter, time, nextKeyframe) {
@@ -177,6 +148,7 @@ if(EditorHelpers) {
         constructor(asset) {
             super(asset);
             this._addParameterFields();
+            this._createMesh();
         }
 
         addParameter() {
@@ -192,6 +164,8 @@ if(EditorHelpers) {
                 page.setContent(params, (id) => {
                     let field = params[id];
                     this._asset.addParameter(field, id);
+                    if(id == 'position' && this._asset.visualEdit)
+                        this._object.add(this._mesh);
                     let input;
                     if(this._menuFieldsMap[field.parameter]) {
                         input = this._menuFieldsMap[field.parameter];
@@ -259,7 +233,7 @@ if(EditorHelpers) {
                         || field.parameter == 'visualEdit') {
                     continue;
                 }
-                let id = field.type.name + ':' + field.parameter;
+                let id = field.parameter;
                 if(id in params || id in this._asset.parameters) {
                     continue;
                 } else {
@@ -278,7 +252,36 @@ if(EditorHelpers) {
             return fieldCopy;
         }
 
+        _createMesh() {
+            if(!piggyTexture) {
+                piggyTexture = new THREE.TextureLoader().load(PiggyImageUrl);
+                piggyTexture.repeat.x = 5;
+                piggyTexture.repeat.y = 2.5;
+                piggyTexture.offset.x = -3.25;
+                piggyTexture.offset.y = -0.75;
+                piggyTexture.colorSpace = THREE.SRGBColorSpace;
+                geometry = new THREE.SphereGeometry(0.05);
+                material = new THREE.MeshBasicMaterial({
+                    color: 0xffffff,
+                    map: piggyTexture,
+                });
+            }
+            this._mesh = new THREE.Mesh(geometry, material);
+            if(this._asset.visualEdit && this._asset.parameters['position'])
+                this._object.add(this._mesh);
+        }
+
+        updateVisualEdit(isVisualEdit) {
+            if(isVisualEdit && this._asset.parameters['position']){
+                this._object.add(this._mesh);
+            } else {
+                this._object.remove(this._mesh);
+            }
+            super.updateVisualEdit(isVisualEdit);
+        }
+
         static fields = [
+            "visualEdit",
             { "parameter": "time", "name": "Time", "min": 0,
                 "type": NumberField },
             { "parameter": "interpolations", "name": "Interpolations",

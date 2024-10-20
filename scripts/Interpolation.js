@@ -218,6 +218,14 @@ class Interpolation extends CustomAsset {
         return nextKeyframe[this._parameter];
     }
 
+    onAddToProject() {
+        if(this._keyframe) this._keyframe.addInterpolation(this._id);
+    }
+
+    onRemoveFromProject() {
+        this._keyframe.removeInterpolation(this._id);
+    }
+
     static assetName = 'Interpolation';
     static isPrivate = true;
 }
