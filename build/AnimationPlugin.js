@@ -696,7 +696,7 @@ class PositionInterpolation extends Interpolation {
         let nextKeyframe = this._keyframe?._animationPath?.getNextKeyframeFor
             ?.('position', this._keyframe);
         let controlPointsQuantity = this._controlPoints.length;
-        if(this._curveObject)
+        if(this._curveObject?.parent)
             this._curveObject.parent.remove(this._curveObject);
         if(!nextKeyframe) return;
         if(this._curveType == 'line' || controlPointsQuantity == 0) {
@@ -731,6 +731,11 @@ class PositionInterpolation extends Interpolation {
         });
         this._curveObject = new THREE$4.Line(geometry, material$1);
         this._keyframe._animationPath.object.add(this._curveObject);
+    }
+
+    hideCurve() {
+        if(this._curveObject?.parent)
+            this._curveObject.parent.remove(this._curveObject);
     }
 
     static assetId = '3dcb0b91-80fc-4aaf-aac4-a991521c906c';
@@ -1101,12 +1106,19 @@ class Keyframe extends CustomAssetEntity$1 {
         return interpolationIds;
     }
 
+    get position() { return super.position; }
     get time() { return this._time; }
 
     set interpolations(interpolations) {
         for(let interpolationId of interpolations) {
             this.addInterpolation(interpolationId);
         }
+    }
+
+    set position(position) {
+        super.position = position;
+        if(this._animationPath)
+            this._animationPath.onKeyframePositionUpdate(this);
     }
 
     set time(time) {
@@ -1120,6 +1132,10 @@ class Keyframe extends CustomAssetEntity$1 {
         this._interpolations.add(interpolation);
         interpolation.registerKeyframe(this);
         this._parameterInterpolations[interpolation.parameter] = interpolation;
+        if(this.editorHelper && !(interpolation.parameter in this.parameters)) {
+            this.editorHelper.addParameter(interpolation.parameter);
+            if(this._animationPath) this._animationPath.updateKeyframes();
+        }
     }
 
     addParameter(field, id) {
@@ -1129,8 +1145,7 @@ class Keyframe extends CustomAssetEntity$1 {
             if(isEditor$1() && this._animationPath) {
                 let asset = this._animationPath._animatedAssets.values().next()
                     .value;
-                if(asset)
-                    this[field.parameter] = asset[field.parameter];
+                if(asset) this[field.parameter] = asset[field.parameter];
             }
             return;
         }
@@ -1146,6 +1161,14 @@ class Keyframe extends CustomAssetEntity$1 {
     removeInterpolation(interpolationId) {
         let interpolation = ProjectHandler$1.getSessionAsset(interpolationId);
         this._interpolations.delete(interpolation);
+        if(!interpolation) return;
+        let parameter = interpolation.parameter;
+        delete this.parameters[parameter];
+        if(this.editorHelper) this.editorHelper.deleteParameter(parameter);
+        if(parameter == 'position') {
+            interpolation.hideCurve();
+            if(this._animationPath) this._animationPath.updateKeyframes();
+        }
     }
 
     setParameters(parameters) {
@@ -1155,7 +1178,8 @@ class Keyframe extends CustomAssetEntity$1 {
     }
 
     registerAnimationPath(animationPath) {
-        this._object.visible = true;
+        if(this.editorHelper)
+            this.editorHelper.updateVisualEdit(this.visualEdit);
         this._animationPath = animationPath;
         this.addTo(animationPath);
         for(let interpolation of this._interpolations) {
@@ -1166,6 +1190,15 @@ class Keyframe extends CustomAssetEntity$1 {
     interpolate(parameter, time, nextKeyframe) {
         let interpolation = this._parameterInterpolations[parameter];
         return interpolation.getValue(time, nextKeyframe);
+    }
+
+    onAddToProject() {
+        if(this._animationPath) this._animationPath.addKeyframe(this._id);
+    }
+
+    onRemoveFromProject() {
+        super.onRemoveFromProject();
+        this._animationPath.removeKeyframe(this._id);
     }
 
     static assetId = '401fcf91-49ef-480b-992d-e55ac0c65d4e';
@@ -1184,7 +1217,7 @@ if(EditorHelpers$1) {
             this._createMesh();
         }
 
-        addParameter() {
+        _addParameter() {
             let animatedAssets = this._asset._animationPath?._animatedAssets;
             if(animatedAssets?.size) {
                 let params = {};
@@ -1208,7 +1241,7 @@ if(EditorHelpers$1) {
                     }
                     menuController.back();
                     let assetPage = menuController.getCurrentPage();
-                    assetPage._removeCurrentFields();
+                    assetPage._setFields([]);
                     this._menuFields.splice(this._menuFields.length -1,0,input);
                     assetPage.setAsset(this._asset, true);
                     let menuFieldsLength = this._menuFields.length;
@@ -1222,6 +1255,50 @@ if(EditorHelpers$1) {
                 PubSub.publish(this._id, 'MENU_NOTIFICATION',
                     { text: 'Please add an asset to the animation path first'});
             }
+        }
+
+        addParameter(parameter) {
+            let animatedAssets = this._asset._animationPath?._animatedAssets;
+            if(!animatedAssets?.size) return;
+            let params = {};
+            for(let asset of animatedAssets) {
+                let editorHelper = asset.editorHelper;
+                this._loadAssetParams(params, editorHelper.constructor);
+            }
+            let field = params[parameter];
+            if(!field) return;
+            this._asset.parameters[parameter] = field;
+            let menuController = getMenuController();
+            let assetPage = menuController.getPage('CUSTOM_ASSET');
+            let pageUpdate = menuController.getCurrentPage() == assetPage
+                && assetPage._asset == this._asset;
+            if(pageUpdate) assetPage._setFields([]);
+            let input;
+            if(this._menuFieldsMap[parameter]) {
+                input = this._menuFieldsMap[parameter];
+            } else {
+                input = this._createStandardField(field);
+                this._menuFieldsMap[field.parameter] = input;
+            }
+            if(input)
+                this._menuFields.splice(this._menuFields.length - 1, 0, input);
+            if(pageUpdate) assetPage.setAsset(this._asset, true);
+            if(parameter == 'position')
+                this.updateVisualEdit(this._asset.visualEdit);
+        }
+
+        deleteParameter(parameter) {
+            let menuController = getMenuController();
+            let assetPage = menuController.getPage('CUSTOM_ASSET');
+            let pageUpdate = menuController.getCurrentPage() == assetPage
+                && assetPage._asset == this._asset;
+            if(pageUpdate) assetPage._setFields([]);
+            let input = this._menuFieldsMap[parameter];
+            let index = this._menuFields.indexOf(input);
+            if(input && index >= 0) this._menuFields.splice(index, 1);
+            if(pageUpdate) assetPage.setAsset(this._asset, true);
+            if(parameter == 'position')
+                this.updateVisualEdit(this._asset.visualEdit);
         }
 
         _addParameterFields() {
@@ -1313,6 +1390,12 @@ if(EditorHelpers$1) {
             super.updateVisualEdit(isVisualEdit);
         }
 
+        hideMesh() {
+            this._object.remove(this._mesh);
+            let interpolation =this._asset._parameterInterpolations['position'];
+            if(interpolation) interpolation.hideCurve();
+        }
+
         static fields = [
             "visualEdit",
             { "parameter": "time", "name": "Time", "min": 0,
@@ -1321,7 +1404,7 @@ if(EditorHelpers$1) {
                 "addFunction": "addInterpolation",
                 "removeFunction": "removeInterpolation",
                 "type": AssetSetField$1 },
-            { "parameter": "addParameter", "name": "Add Parameter",
+            { "parameter": "_addParameter", "name": "Add Parameter",
                 "type": ButtonField$1 },
         ];
     }
@@ -1399,7 +1482,7 @@ class AnimationPath extends CustomAssetEntity {
 
     set keyframes(keyframes) {
         for(let keyframeId of keyframes) {
-            this.addKeyframe(keyframeId);
+            this.addKeyframe(keyframeId, true);
         }
         this.updateKeyframes();
     }
@@ -1412,23 +1495,25 @@ class AnimationPath extends CustomAssetEntity {
         this._animatedAssets.add(animatedAsset);
     }
 
-    addKeyframe(keyframeId) {
+    addKeyframe(keyframeId, ignoreKeyframesUpdate) {
         let keyframe = ProjectHandler.getAsset(keyframeId);
         if(!keyframe) return;
         this._keyframes.add(keyframe);
         keyframe.registerAnimationPath(this);
+        if(!ignoreKeyframesUpdate) this.updateKeyframes();
     }
 
     removeAnimatedAsset(animatedAssetId) {
-        let animatedAsset = ProjectHandler.getAsset(animatedAssetId);
+        let animatedAsset = ProjectHandler.getSessionAsset(animatedAssetId);
         if(!animatedAsset) return;
         this._animatedAssets.delete(animatedAsset);
     }
 
     removeKeyframe(keyframeId) {
-        let keyframe = ProjectHandler.getAsset(keyframeId);
-        if(!keyframe) return;
+        let keyframe = ProjectHandler.getSessionAsset(keyframeId);
         this._keyframes.delete(keyframe);
+        this.updateKeyframes();
+        if(keyframe.editorHelper) keyframe.editorHelper.hideMesh();
     }
 
     getNextKeyframeFor(parameter, previousKeyframe) {
@@ -1470,6 +1555,20 @@ class AnimationPath extends CustomAssetEntity {
         if(!keyframes) return;
         for(let keyframe of keyframes) {
             let interpolation = keyframe._parameterInterpolations['position'];
+            if(interpolation) interpolation.updateCurve();
+        }
+    }
+
+    onKeyframePositionUpdate(keyframe) {
+        let keyframes = this._orderedParameters['position'];
+        if(!keyframes) return;
+        let index = keyframes.indexOf(keyframe);
+        if(keyframes < 0) return;
+        let interpolation = keyframe._parameterInterpolations['position'];
+        if(interpolation) interpolation.updateCurve();
+        if(index > 0) {
+            keyframe = keyframes[index - 1];
+            interpolation = keyframe._parameterInterpolations['position'];
             if(interpolation) interpolation.updateCurve();
         }
     }
