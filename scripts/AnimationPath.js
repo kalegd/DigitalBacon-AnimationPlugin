@@ -71,7 +71,7 @@ export default class AnimationPath extends CustomAssetEntity {
 
     set keyframes(keyframes) {
         for(let keyframeId of keyframes) {
-            this.addKeyframe(keyframeId);
+            this.addKeyframe(keyframeId, true);
         }
         this.updateKeyframes();
     }
@@ -84,11 +84,12 @@ export default class AnimationPath extends CustomAssetEntity {
         this._animatedAssets.add(animatedAsset);
     }
 
-    addKeyframe(keyframeId) {
+    addKeyframe(keyframeId, ignoreKeyframesUpdate) {
         let keyframe = ProjectHandler.getAsset(keyframeId);
         if(!keyframe) return;
         this._keyframes.add(keyframe);
         keyframe.registerAnimationPath(this);
+        if(!ignoreKeyframesUpdate) this.updateKeyframes();
     }
 
     removeAnimatedAsset(animatedAssetId) {
@@ -100,6 +101,8 @@ export default class AnimationPath extends CustomAssetEntity {
     removeKeyframe(keyframeId) {
         let keyframe = ProjectHandler.getSessionAsset(keyframeId);
         this._keyframes.delete(keyframe);
+        this.updateKeyframes();
+        if(keyframe.editorHelper) keyframe.editorHelper.hideMesh();
     }
 
     getNextKeyframeFor(parameter, previousKeyframe) {
@@ -141,6 +144,20 @@ export default class AnimationPath extends CustomAssetEntity {
         if(!keyframes) return;
         for(let keyframe of keyframes) {
             let interpolation = keyframe._parameterInterpolations['position'];
+            if(interpolation) interpolation.updateCurve();
+        }
+    }
+
+    onKeyframePositionUpdate(keyframe) {
+        let keyframes = this._orderedParameters['position'];
+        if(!keyframes) return;
+        let index = keyframes.indexOf(keyframe);
+        if(keyframes < 0) return;
+        let interpolation = keyframe._parameterInterpolations['position'];
+        if(interpolation) interpolation.updateCurve();
+        if(index > 0) {
+            keyframe = keyframes[index - 1];
+            interpolation = keyframe._parameterInterpolations['position'];
             if(interpolation) interpolation.updateCurve();
         }
     }

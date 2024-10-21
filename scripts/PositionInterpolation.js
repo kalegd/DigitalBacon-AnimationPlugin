@@ -115,7 +115,7 @@ export default class PositionInterpolation extends Interpolation {
         let nextKeyframe = this._keyframe?._animationPath?.getNextKeyframeFor
             ?.('position', this._keyframe);
         let controlPointsQuantity = this._controlPoints.length;
-        if(this._curveObject)
+        if(this._curveObject?.parent)
             this._curveObject.parent.remove(this._curveObject);
         if(!nextKeyframe) return;
         if(this._curveType == 'line' || controlPointsQuantity == 0) {
@@ -150,6 +150,11 @@ export default class PositionInterpolation extends Interpolation {
         });
         this._curveObject = new THREE.Line(geometry, material);
         this._keyframe._animationPath.object.add(this._curveObject);
+    }
+
+    hideCurve() {
+        if(this._curveObject?.parent)
+            this._curveObject.parent.remove(this._curveObject);
     }
 
     static assetId = '3dcb0b91-80fc-4aaf-aac4-a991521c906c';

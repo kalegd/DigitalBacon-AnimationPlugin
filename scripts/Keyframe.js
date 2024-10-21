@@ -68,12 +68,19 @@ export default class Keyframe extends CustomAssetEntity {
         return interpolationIds;
     }
 
+    get position() { return super.position; }
     get time() { return this._time; }
 
     set interpolations(interpolations) {
         for(let interpolationId of interpolations) {
             this.addInterpolation(interpolationId);
         }
+    }
+
+    set position(position) {
+        super.position = position;
+        if(this._animationPath)
+            this._animationPath.onKeyframePositionUpdate(this);
     }
 
     set time(time) {
@@ -87,6 +94,10 @@ export default class Keyframe extends CustomAssetEntity {
         this._interpolations.add(interpolation);
         interpolation.registerKeyframe(this);
         this._parameterInterpolations[interpolation.parameter] = interpolation;
+        if(this.editorHelper && !(interpolation.parameter in this.parameters)) {
+            this.editorHelper.addParameter(interpolation.parameter);
+            if(this._animationPath) this._animationPath.updateKeyframes();
+        }
     }
 
     addParameter(field, id) {
@@ -96,8 +107,7 @@ export default class Keyframe extends CustomAssetEntity {
             if(isEditor() && this._animationPath) {
                 let asset = this._animationPath._animatedAssets.values().next()
                     .value;
-                if(asset)
-                    this[field.parameter] = asset[field.parameter];
+                if(asset) this[field.parameter] = asset[field.parameter];
             }
             return;
         }
@@ -113,6 +123,14 @@ export default class Keyframe extends CustomAssetEntity {
     removeInterpolation(interpolationId) {
         let interpolation = ProjectHandler.getSessionAsset(interpolationId);
         this._interpolations.delete(interpolation);
+        if(!interpolation) return;
+        let parameter = interpolation.parameter;
+        delete this.parameters[parameter];
+        if(this.editorHelper) this.editorHelper.deleteParameter(parameter);
+        if(parameter == 'position') {
+            interpolation.hideCurve();
+            if(this._animationPath) this._animationPath.updateKeyframes();
+        }
     }
 
     setParameters(parameters) {
@@ -122,7 +140,8 @@ export default class Keyframe extends CustomAssetEntity {
     }
 
     registerAnimationPath(animationPath) {
-        this._object.visible = true;
+        if(this.editorHelper)
+            this.editorHelper.updateVisualEdit(this.visualEdit);
         this._animationPath = animationPath;
         this.addTo(animationPath);
         for(let interpolation of this._interpolations) {
@@ -160,7 +179,7 @@ if(EditorHelpers) {
             this._createMesh();
         }
 
-        addParameter() {
+        _addParameter() {
             let animatedAssets = this._asset._animationPath?._animatedAssets;
             if(animatedAssets?.size) {
                 let params = {};
@@ -184,7 +203,7 @@ if(EditorHelpers) {
                     }
                     menuController.back();
                     let assetPage = menuController.getCurrentPage();
-                    assetPage._removeCurrentFields();
+                    assetPage._setFields([]);
                     this._menuFields.splice(this._menuFields.length -1,0,input);
                     assetPage.setAsset(this._asset, true);
                     let menuFieldsLength = this._menuFields.length;
@@ -198,6 +217,50 @@ if(EditorHelpers) {
                 PubSub.publish(this._id, 'MENU_NOTIFICATION',
                     { text: 'Please add an asset to the animation path first'});
             }
+        }
+
+        addParameter(parameter) {
+            let animatedAssets = this._asset._animationPath?._animatedAssets;
+            if(!animatedAssets?.size) return;
+            let params = {};
+            for(let asset of animatedAssets) {
+                let editorHelper = asset.editorHelper;
+                this._loadAssetParams(params, editorHelper.constructor);
+            }
+            let field = params[parameter];
+            if(!field) return;
+            this._asset.parameters[parameter] = field;
+            let menuController = getMenuController();
+            let assetPage = menuController.getPage('CUSTOM_ASSET');
+            let pageUpdate = menuController.getCurrentPage() == assetPage
+                && assetPage._asset == this._asset;
+            if(pageUpdate) assetPage._setFields([]);
+            let input;
+            if(this._menuFieldsMap[parameter]) {
+                input = this._menuFieldsMap[parameter];
+            } else {
+                input = this._createStandardField(field);
+                this._menuFieldsMap[field.parameter] = input;
+            }
+            if(input)
+                this._menuFields.splice(this._menuFields.length - 1, 0, input);
+            if(pageUpdate) assetPage.setAsset(this._asset, true);
+            if(parameter == 'position')
+                this.updateVisualEdit(this._asset.visualEdit);
+        }
+
+        deleteParameter(parameter) {
+            let menuController = getMenuController();
+            let assetPage = menuController.getPage('CUSTOM_ASSET');
+            let pageUpdate = menuController.getCurrentPage() == assetPage
+                && assetPage._asset == this._asset;
+            if(pageUpdate) assetPage._setFields([]);
+            let input = this._menuFieldsMap[parameter];
+            let index = this._menuFields.indexOf(input);
+            if(input && index >= 0) this._menuFields.splice(index, 1);
+            if(pageUpdate) assetPage.setAsset(this._asset, true);
+            if(parameter == 'position')
+                this.updateVisualEdit(this._asset.visualEdit);
         }
 
         _addParameterFields() {
@@ -289,6 +352,12 @@ if(EditorHelpers) {
             super.updateVisualEdit(isVisualEdit);
         }
 
+        hideMesh() {
+            this._object.remove(this._mesh);
+            let interpolation =this._asset._parameterInterpolations['position'];
+            if(interpolation) interpolation.hideCurve();
+        }
+
         static fields = [
             "visualEdit",
             { "parameter": "time", "name": "Time", "min": 0,
@@ -297,7 +366,7 @@ if(EditorHelpers) {
                 "addFunction": "addInterpolation",
                 "removeFunction": "removeInterpolation",
                 "type": AssetSetField },
-            { "parameter": "addParameter", "name": "Add Parameter",
+            { "parameter": "_addParameter", "name": "Add Parameter",
                 "type": ButtonField },
         ];
     }
