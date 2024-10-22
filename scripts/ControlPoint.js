@@ -77,6 +77,7 @@ if(EditorHelpers) {
                 material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             }
             this._mesh = new THREE.Mesh(geometry, material);
+            this._mesh.layers.set(1);
             if(this._asset.visualEdit) this._object.add(this._mesh);
         }
 

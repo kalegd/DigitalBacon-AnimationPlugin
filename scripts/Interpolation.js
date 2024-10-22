@@ -223,7 +223,7 @@ class Interpolation extends CustomAsset {
     }
 
     onRemoveFromProject() {
-        this._keyframe.removeInterpolation(this._id);
+        if(this._keyframe) this._keyframe.removeInterpolation(this._id);
     }
 
     static assetName = 'Interpolation';

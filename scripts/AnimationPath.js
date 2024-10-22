@@ -1,7 +1,7 @@
 import AnimationController from 'http://localhost:8000/scripts/AnimationController.js';
 import Keyframe from 'http://localhost:8000/scripts/Keyframe.js';
 
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, Scene, THREE, isEditor, isImmersionDisabled } = window.DigitalBacon;
+const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, Scene, THREE, getCamera, isEditor, isImmersionDisabled } = window.DigitalBacon;
 const { AssetEntity, CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
 const { AssetSetField, ButtonField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
@@ -12,6 +12,8 @@ const workingVector3 = new THREE.Vector3();
 
 var maxScrollTime = 0;
 var animationController;
+
+if(isEditor()) getCamera().layers.enable(1);
 
 export default class AnimationPath extends CustomAssetEntity {
     constructor(params = {}) {

@@ -149,6 +149,7 @@ export default class PositionInterpolation extends Interpolation {
             color: 0xffff00,
         });
         this._curveObject = new THREE.Line(geometry, material);
+        this._curveObject.layers.set(1);
         this._keyframe._animationPath.object.add(this._curveObject);
     }
 

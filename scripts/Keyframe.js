@@ -160,7 +160,7 @@ export default class Keyframe extends CustomAssetEntity {
 
     onRemoveFromProject() {
         super.onRemoveFromProject();
-        this._animationPath.removeKeyframe(this._id);
+        if(this._animationPath) this._animationPath.removeKeyframe(this._id);
     }
 
     static assetId = '401fcf91-49ef-480b-992d-e55ac0c65d4e';
@@ -339,6 +339,7 @@ if(EditorHelpers) {
                 });
             }
             this._mesh = new THREE.Mesh(geometry, material);
+            this._mesh.layers.set(1);
             if(this._asset.visualEdit && this._asset.parameters['position'])
                 this._object.add(this._mesh);
         }
