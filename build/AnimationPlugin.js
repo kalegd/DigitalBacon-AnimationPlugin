@@ -1,6 +1,8 @@
-const { Assets: Assets$4, DigitalBaconUI, ProjectHandler: ProjectHandler$c, THREE: THREE$7, dynamicAssets, getMenuController: getMenuController$2, isEditor: isEditor$4 } = window.DigitalBacon;
+const { Assets: Assets$4, DigitalBaconUI, LibraryHandler: LibraryHandler$c, ProjectHandler: ProjectHandler$c, THREE: THREE$7, dynamicAssets, getMenuController: getMenuController$2, isEditor: isEditor$4 } = window.DigitalBacon;
 const { CustomAssetEntity: CustomAssetEntity$3 } = Assets$4;
 
+const euler = new THREE$7.Euler();
+const quaternion = new THREE$7.Quaternion();
 const vector3s$1 = [new THREE$7.Vector3(), new THREE$7.Vector3()];
 const ANIMATION_PATH_ID = '2d227485-0b34-40a4-873d-2a0782d034c6';
 const hoveredButtonStyle = new DigitalBaconUI.Style({ materialColor: 0x63666b});
@@ -89,8 +91,13 @@ class AnimationController extends CustomAssetEntity$3 {
             .divideScalar(4);
         vector3s$1[0].sub(vector3s$1[1]).roundWithPrecision(5);
         let position = vector3s$1[0].toArray();
+        vector3s$1[0].set(0, 0, 1);
+        vector3s$1[1].setY(0).normalize();
+        quaternion.setFromUnitVectors(vector3s$1[0], vector3s$1[1]);
+        euler.setFromQuaternion(quaternion).roundWithPrecision(5);
+        let rotation = euler.toArray();
         this.position = position;
-        this.parent.object.worldToLocal(this.object.position);
+        this.rotation = rotation;
     }
 
     registerAnimationPathClass(animationPathClass) {
@@ -110,10 +117,10 @@ class AnimationController extends CustomAssetEntity$3 {
         if(this._pathAssets.length == 0) return;
         this._time = 0;
         this._reverse = false;
-        dynamicAssets.add(this);
     }
 
     update(timeDelta) {
+        if(!this._pathAssets) return;
         this._time += this._speed * ((this._reverse) ? -timeDelta : timeDelta);
         if(this._time > this._maxTime) {
             this._reverse = true;
@@ -124,14 +131,18 @@ class AnimationController extends CustomAssetEntity$3 {
             asset._setTime(this._time);
         }
         if(this._time == 0) {
-            dynamicAssets.delete(this);
+            this._pathAssets = null;
         }
     }
 
     static assetId = 'd4706106-d21d-4933-a665-6c5f3b6cb383';
     static assetName = 'Animation Controller';
     static isPrivate = true;
+    static isEphemeral = true;
 }
+
+ProjectHandler$c.registerAsset(AnimationController);
+LibraryHandler$c.loadPrivate(AnimationController);
 
 const { Assets: Assets$3, EditorHelpers: EditorHelpers$7 } = window.DigitalBacon;
 const { CustomAsset } = Assets$3;
@@ -355,7 +366,7 @@ class Interpolation extends CustomAsset {
     }
 
     onRemoveFromProject() {
-        this._keyframe.removeInterpolation(this._id);
+        if(this._keyframe) this._keyframe.removeInterpolation(this._id);
     }
 
     static assetName = 'Interpolation';
@@ -562,6 +573,7 @@ if(EditorHelpers$6) {
                 material$2 = new THREE$5.MeshBasicMaterial({ color: 0xff0000 });
             }
             this._mesh = new THREE$5.Mesh(geometry$1, material$2);
+            this._mesh.layers.set(1);
             if(this._asset.visualEdit) this._object.add(this._mesh);
         }
 
@@ -730,6 +742,7 @@ class PositionInterpolation extends Interpolation {
             color: 0xffff00,
         });
         this._curveObject = new THREE$4.Line(geometry, material$1);
+        this._curveObject.layers.set(1);
         this._keyframe._animationPath.object.add(this._curveObject);
     }
 
@@ -1198,7 +1211,7 @@ class Keyframe extends CustomAssetEntity$1 {
 
     onRemoveFromProject() {
         super.onRemoveFromProject();
-        this._animationPath.removeKeyframe(this._id);
+        if(this._animationPath) this._animationPath.removeKeyframe(this._id);
     }
 
     static assetId = '401fcf91-49ef-480b-992d-e55ac0c65d4e';
@@ -1377,6 +1390,7 @@ if(EditorHelpers$1) {
                 });
             }
             this._mesh = new THREE$1.Mesh(geometry, material);
+            this._mesh.layers.set(1);
             if(this._asset.visualEdit && this._asset.parameters['position'])
                 this._object.add(this._mesh);
         }
@@ -1431,7 +1445,7 @@ if(EditorHelpers$1) {
     EditorHelperFactory$1.registerEditorHelper(KeyframeHelper, Keyframe);
 }
 
-const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, Scene, THREE, isEditor, isImmersionDisabled } = window.DigitalBacon;
+const { Assets, EditorHelpers, LibraryHandler, ProjectHandler, Scene, THREE, getCamera, isEditor, isImmersionDisabled } = window.DigitalBacon;
 const { AssetEntity, CustomAssetEntity } = Assets;
 const { CustomAssetEntityHelper, EditorHelperFactory } = EditorHelpers;
 const { AssetSetField, ButtonField, CheckboxField } = CustomAssetEntityHelper.FieldTypes;
@@ -1442,6 +1456,8 @@ const workingVector3 = new THREE.Vector3();
 
 var maxScrollTime = 0;
 var animationController;
+
+if(isEditor()) getCamera().layers.enable(1);
 
 class AnimationPath extends CustomAssetEntity {
     constructor(params = {}) {
@@ -1532,7 +1548,7 @@ class AnimationPath extends CustomAssetEntity {
         let keyframe = ProjectHandler.getSessionAsset(keyframeId);
         this._keyframes.delete(keyframe);
         this.updateKeyframes();
-        if(keyframe.editorHelper) keyframe.editorHelper.hideMesh();
+        if(keyframe?.editorHelper) keyframe.editorHelper.hideMesh();
     }
 
     getNextKeyframeFor(parameter, previousKeyframe) {
@@ -1666,14 +1682,10 @@ if(EditorHelpers) {
 
         preview() {
             if(!animationController) {
-                animationController = new AnimationController();
-                animationController.registerAnimationPathClass(AnimationPath);
-                Scene.object.add(animationController.object);
-                EditorHelperFactory.addEditorHelperTo(
-                    animationController);
-                animationController.editorHelper.updateVisualEdit(true);
-            } else {
-                Scene.object.add(animationController.object);
+                animationController = ProjectHandler.addNewAsset(
+                    AnimationController.assetId, { visualEdit: true });
+            } else if(animationController != ProjectHandler.getAsset(animationController.id)) {
+                ProjectHandler.addAsset(animationController);
             }
             animationController.setPositionFromMenu();
         }
