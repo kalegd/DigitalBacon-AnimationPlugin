@@ -1242,7 +1242,7 @@ if(EditorHelpers$1) {
                     menuController.back();
                     let assetPage = menuController.getCurrentPage();
                     assetPage._setFields([]);
-                    this._menuFields.splice(this._menuFields.length -1,0,input);
+                    this._menuFields.splice(this._menuFields.length -2,0,input);
                     assetPage.setAsset(this._asset, true);
                     let menuFieldsLength = this._menuFields.length;
                     while(assetPage._lastItemIndex + 1 != menuFieldsLength) {
@@ -1281,7 +1281,7 @@ if(EditorHelpers$1) {
                 this._menuFieldsMap[field.parameter] = input;
             }
             if(input)
-                this._menuFields.splice(this._menuFields.length - 1, 0, input);
+                this._menuFields.splice(this._menuFields.length - 2, 0, input);
             if(pageUpdate) assetPage.setAsset(this._asset, true);
             if(parameter == 'position')
                 this.updateVisualEdit(this._asset.visualEdit);
@@ -1312,7 +1312,7 @@ if(EditorHelpers$1) {
                     input = this._createStandardField(field);
                     this._menuFieldsMap[field.parameter] = input;
                 }
-                this._menuFields.splice(this._menuFields.length - 1, 0, input);
+                this._menuFields.splice(this._menuFields.length - 2, 0, input);
             }
         }
 
@@ -1381,6 +1381,23 @@ if(EditorHelpers$1) {
                 this._object.add(this._mesh);
         }
 
+        _setFromAsset() {
+            let animationPath = this._asset._animationPath;
+            if(!animationPath) {
+                PubSub.publish(this._id, 'MENU_NOTIFICATION',
+                    { text: 'Sorry something went wrong :('});
+            } else if(animationPath.animatedAssets.length == 0) {
+                PubSub.publish(this._id, 'MENU_NOTIFICATION',
+                    { text: 'Please add an asset to the animation path first'});
+            } else {
+                let asset = animationPath._animatedAssets.values().next().value;
+                for(let key in this._asset.parameters) {
+                    let value = asset[key];
+                    if(value != null) this._asset[key] = value;
+                }
+            }
+        }
+
         updateVisualEdit(isVisualEdit) {
             if(isVisualEdit && this._asset.parameters['position']){
                 this._object.add(this._mesh);
@@ -1405,6 +1422,8 @@ if(EditorHelpers$1) {
                 "removeFunction": "removeInterpolation",
                 "type": AssetSetField$1 },
             { "parameter": "_addParameter", "name": "Add Parameter",
+                "type": ButtonField$1 },
+            { "parameter": "_setFromAsset", "name": "Set from Asset",
                 "type": ButtonField$1 },
         ];
     }
