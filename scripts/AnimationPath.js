@@ -104,7 +104,7 @@ export default class AnimationPath extends CustomAssetEntity {
         let keyframe = ProjectHandler.getSessionAsset(keyframeId);
         this._keyframes.delete(keyframe);
         this.updateKeyframes();
-        if(keyframe.editorHelper) keyframe.editorHelper.hideMesh();
+        if(keyframe?.editorHelper) keyframe.editorHelper.hideMesh();
     }
 
     getNextKeyframeFor(parameter, previousKeyframe) {
@@ -238,14 +238,10 @@ if(EditorHelpers) {
 
         preview() {
             if(!animationController) {
-                animationController = new AnimationController();
-                animationController.registerAnimationPathClass(AnimationPath);
-                Scene.object.add(animationController.object);
-                EditorHelperFactory.addEditorHelperTo(
-                    animationController);
-                animationController.editorHelper.updateVisualEdit(true);
-            } else {
-                Scene.object.add(animationController.object);
+                animationController = ProjectHandler.addNewAsset(
+                    AnimationController.assetId, { visualEdit: true });
+            } else if(animationController != ProjectHandler.getAsset(animationController.id)) {
+                ProjectHandler.addAsset(animationController);
             }
             animationController.setPositionFromMenu();
         }

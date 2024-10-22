@@ -1,6 +1,8 @@
-const { Assets, DigitalBaconUI, ProjectHandler, THREE, dynamicAssets, getMenuController, isEditor } = window.DigitalBacon;
+const { Assets, DigitalBaconUI, LibraryHandler, ProjectHandler, THREE, dynamicAssets, getMenuController, isEditor } = window.DigitalBacon;
 const { CustomAssetEntity } = Assets;
 
+const euler = new THREE.Euler();
+const quaternion = new THREE.Quaternion();
 const vector3s = [new THREE.Vector3(), new THREE.Vector3()];
 const ANIMATION_PATH_ID = '2d227485-0b34-40a4-873d-2a0782d034c6';
 const hoveredButtonStyle = new DigitalBaconUI.Style({ materialColor: 0x63666b});
@@ -91,8 +93,13 @@ export default class AnimationController extends CustomAssetEntity {
             .divideScalar(4);
         vector3s[0].sub(vector3s[1]).roundWithPrecision(5);
         let position = vector3s[0].toArray();
+        vector3s[0].set(0, 0, 1);
+        vector3s[1].setY(0).normalize();
+        quaternion.setFromUnitVectors(vector3s[0], vector3s[1]);
+        euler.setFromQuaternion(quaternion).roundWithPrecision(5);
+        let rotation = euler.toArray();
         this.position = position;
-        this.parent.object.worldToLocal(this.object.position);
+        this.rotation = rotation;
     }
 
     registerAnimationPathClass(animationPathClass) {
@@ -112,10 +119,10 @@ export default class AnimationController extends CustomAssetEntity {
         if(this._pathAssets.length == 0) return;
         this._time = 0;
         this._reverse = false;
-        dynamicAssets.add(this);
     }
 
     update(timeDelta) {
+        if(!this._pathAssets) return;
         this._time += this._speed * ((this._reverse) ? -timeDelta : timeDelta);
         if(this._time > this._maxTime) {
             this._reverse = true;
@@ -126,11 +133,15 @@ export default class AnimationController extends CustomAssetEntity {
             asset._setTime(this._time);
         }
         if(this._time == 0) {
-            dynamicAssets.delete(this);
+            this._pathAssets = null;
         }
     }
 
     static assetId = 'd4706106-d21d-4933-a665-6c5f3b6cb383';
     static assetName = 'Animation Controller';
     static isPrivate = true;
+    static isEphemeral = true;
 }
+
+ProjectHandler.registerAsset(AnimationController);
+LibraryHandler.loadPrivate(AnimationController);
